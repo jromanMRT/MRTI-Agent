@@ -23,10 +23,20 @@ type Config struct {
 	Plugins   PluginsConfig   `yaml:"plugins"`
 	Scripts   ScriptsConfig   `yaml:"scripts"`
 	Alerts    AlertsConfig    `yaml:"alerts"`
+	Update    UpdateConfig    `yaml:"update"`
 
 	// path remembers where this config was loaded from so it can be rewritten
 	// when the Core pushes updates.
 	path string `yaml:"-"`
+}
+
+// UpdateConfig controls agent self-update. Updates are verified against a
+// SHA-256 and, when a public key is configured, an Ed25519 signature — so a
+// compromised download server alone cannot push malicious binaries.
+type UpdateConfig struct {
+	Enabled       bool   `yaml:"enabled"`
+	PublicKey     string `yaml:"public_key"`     // base64 Ed25519 public key
+	AllowUnsigned bool   `yaml:"allow_unsigned"` // permit updates without a signature (NOT recommended)
 }
 
 // ScriptsConfig gates remote script execution (a powerful capability, disabled
@@ -152,6 +162,10 @@ func Default() *Config {
 			DiskPercent:    90,
 			UPSBattery:     50,
 			ServiceStopped: false,
+		},
+		Update: UpdateConfig{
+			Enabled:       false, // enable centrally once a signing key is set
+			AllowUnsigned: false,
 		},
 	}
 }
