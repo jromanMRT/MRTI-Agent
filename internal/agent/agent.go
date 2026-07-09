@@ -30,6 +30,8 @@ import (
 	// Blank imports register the built-in modules with the module registry.
 	_ "github.com/jromanMRT/mrti-agent/modules/cpu"
 	_ "github.com/jromanMRT/mrti-agent/modules/disk"
+	_ "github.com/jromanMRT/mrti-agent/modules/docker"
+	_ "github.com/jromanMRT/mrti-agent/modules/eventlogs"
 	_ "github.com/jromanMRT/mrti-agent/modules/network"
 	_ "github.com/jromanMRT/mrti-agent/modules/processes"
 	_ "github.com/jromanMRT/mrti-agent/modules/ram"

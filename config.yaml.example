@@ -78,3 +78,6 @@ alerts:
 #   processes  — top processes by CPU/RAM (settings: top_n, sort_by)
 #   services   — systemd units / Windows services
 #   software   — installed programs and versions
+#   docker     — containers, state, restart count (settings: host, stats)
+#   eventlogs  — recent errors/warnings from journald / Windows Event Log
+#                (settings: since e.g. "1h", max, logs [System, Application])

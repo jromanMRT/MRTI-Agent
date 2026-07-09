@@ -161,6 +161,8 @@ mrti-agent -version
 | `processes` | top-N by CPU/RAM (configurable `top_n`, `sort_by`): pid, name, user, cpu%, RSS, exe path, priority, threads |
 | `services` | service inventory + state: systemd units (Linux) / Service Control Manager via WMI (Windows), with running/failed counts and start mode |
 | `software` | installed programs + versions: dpkg/rpm (Linux) or Uninstall registry keys (Windows) |
+| `docker` | containers (all): name, image, state, status, restart count, plus optional live CPU%/memory (`stats: true`); talks to the Engine API over the local socket/named-pipe |
+| `eventlogs` | recent critical/error/warning entries from journald (Linux) or the Windows Event Log via Get-WinEvent; configurable `since`/`max`/`logs` |
 
 Two subsystems complement the collectors:
 
@@ -255,9 +257,13 @@ Services), `software`/inventory collectors · **remote scripts** subsystem
 **alerts** subsystem (local CPU/RAM/disk threshold evaluation attached to the
 envelope). All verified end-to-end.
 
-**Next collectors (native modules or plugins):** `eventlogs` (Journal/Event
-Viewer) · `docker` · `snmp` · `ups` (NUT/APC/…) · `temperature` ·
-`virtualization` detection.
+**Implemented (v0.3 — Phase 3):** `docker` (containers, state, restart count,
+optional live CPU/RAM over the Engine socket/pipe) and `eventlogs`
+(journald / Windows Event Log, severity-filtered) collectors. Verified
+end-to-end.
+
+**Next collectors (native modules or plugins):** `snmp` · `ups` (NUT/APC/…) ·
+`temperature` · `virtualization` detection.
 
 **Next subsystems:**
 - **Self-update** — signed binary download, version pinning, rollback.
