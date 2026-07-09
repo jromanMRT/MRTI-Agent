@@ -21,10 +21,29 @@ type Config struct {
 	Cache     CacheConfig     `yaml:"cache"`
 	Modules   ModulesConfig   `yaml:"modules"`
 	Plugins   PluginsConfig   `yaml:"plugins"`
+	Scripts   ScriptsConfig   `yaml:"scripts"`
+	Alerts    AlertsConfig    `yaml:"alerts"`
 
 	// path remembers where this config was loaded from so it can be rewritten
 	// when the Core pushes updates.
 	path string `yaml:"-"`
+}
+
+// ScriptsConfig gates remote script execution (a powerful capability, disabled
+// by default; the Core enables it per-agent by pushing config).
+type ScriptsConfig struct {
+	Enabled             bool     `yaml:"enabled"`
+	AllowedInterpreters []string `yaml:"allowed_interpreters"`
+	MaxTimeoutSeconds   int      `yaml:"max_timeout_seconds"`
+	WorkDir             string   `yaml:"work_dir"` // where scripts are staged; temp dir if empty
+}
+
+// AlertsConfig holds local threshold rules evaluated after each collection.
+type AlertsConfig struct {
+	Enabled     bool    `yaml:"enabled"`
+	CPUPercent  float64 `yaml:"cpu_percent"`  // warn above this overall CPU %
+	MemPercent  float64 `yaml:"mem_percent"`  // warn above this RAM used %
+	DiskPercent float64 `yaml:"disk_percent"` // warn above this per-partition used %
 }
 
 type AgentConfig struct {
@@ -118,6 +137,17 @@ func Default() *Config {
 		Plugins: PluginsConfig{
 			Dir:     "plugins",
 			Enabled: []string{},
+		},
+		Scripts: ScriptsConfig{
+			Enabled:             false, // safe default; enable centrally
+			AllowedInterpreters: []string{"bash", "sh", "powershell", "cmd", "python", "python3"},
+			MaxTimeoutSeconds:   300,
+		},
+		Alerts: AlertsConfig{
+			Enabled:     true,
+			CPUPercent:  90,
+			MemPercent:  90,
+			DiskPercent: 90,
 		},
 	}
 }

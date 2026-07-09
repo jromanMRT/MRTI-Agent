@@ -1,0 +1,100 @@
+// Package alerts performs lightweight, local threshold evaluation right after
+// each collection cycle. Detecting "CPU high", "disk full", etc. on the agent
+// means the Core is notified immediately — even between metric batches — and
+// operators get signal without server-side rules for the common cases.
+package alerts
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/jromanMRT/mrti-agent/internal/config"
+	"github.com/jromanMRT/mrti-agent/internal/model"
+)
+
+// Severity levels.
+const (
+	Warning  = "warning"
+	Critical = "critical"
+)
+
+// Alert is a single fired rule.
+type Alert struct {
+	Rule      string    `json:"rule"`
+	Severity  string    `json:"severity"`
+	Resource  string    `json:"resource"`
+	Message   string    `json:"message"`
+	Value     float64   `json:"value"`
+	Threshold float64   `json:"threshold"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// Evaluate inspects a cycle's module results against the configured thresholds
+// and returns any alerts that fired. It decodes only the fields it needs, so it
+// stays decoupled from the module packages.
+func Evaluate(cfg config.AlertsConfig, results []model.ModuleResult) []Alert {
+	if !cfg.Enabled {
+		return nil
+	}
+	now := time.Now()
+	var out []Alert
+
+	for _, r := range results {
+		if r.Error != "" || len(r.Data) == 0 {
+			continue
+		}
+		switch r.Module {
+		case "cpu":
+			var d struct {
+				UsagePercent float64 `json:"usage_percent"`
+			}
+			if json.Unmarshal(r.Data, &d) == nil && cfg.CPUPercent > 0 && d.UsagePercent >= cfg.CPUPercent {
+				out = append(out, Alert{
+					Rule: "cpu_high", Severity: sev(d.UsagePercent, cfg.CPUPercent),
+					Resource: "cpu", Value: d.UsagePercent, Threshold: cfg.CPUPercent, Timestamp: now,
+					Message: fmt.Sprintf("CPU usage %.1f%% ≥ %.0f%%", d.UsagePercent, cfg.CPUPercent),
+				})
+			}
+		case "ram":
+			var d struct {
+				UsedPercent float64 `json:"used_percent"`
+			}
+			if json.Unmarshal(r.Data, &d) == nil && cfg.MemPercent > 0 && d.UsedPercent >= cfg.MemPercent {
+				out = append(out, Alert{
+					Rule: "memory_high", Severity: sev(d.UsedPercent, cfg.MemPercent),
+					Resource: "ram", Value: d.UsedPercent, Threshold: cfg.MemPercent, Timestamp: now,
+					Message: fmt.Sprintf("RAM usage %.1f%% ≥ %.0f%%", d.UsedPercent, cfg.MemPercent),
+				})
+			}
+		case "disk":
+			var d struct {
+				Partitions []struct {
+					Mountpoint  string  `json:"mountpoint"`
+					UsedPercent float64 `json:"used_percent"`
+				} `json:"partitions"`
+			}
+			if json.Unmarshal(r.Data, &d) == nil && cfg.DiskPercent > 0 {
+				for _, p := range d.Partitions {
+					if p.UsedPercent >= cfg.DiskPercent {
+						out = append(out, Alert{
+							Rule: "disk_full", Severity: sev(p.UsedPercent, cfg.DiskPercent),
+							Resource: "disk:" + p.Mountpoint, Value: p.UsedPercent,
+							Threshold: cfg.DiskPercent, Timestamp: now,
+							Message: fmt.Sprintf("Disk %s at %.1f%% ≥ %.0f%%", p.Mountpoint, p.UsedPercent, cfg.DiskPercent),
+						})
+					}
+				}
+			}
+		}
+	}
+	return out
+}
+
+// sev escalates to critical once usage is well past the threshold.
+func sev(value, threshold float64) string {
+	if value >= threshold+((100-threshold)/2) || value >= 98 {
+		return Critical
+	}
+	return Warning
+}

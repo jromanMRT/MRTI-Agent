@@ -158,6 +158,19 @@ mrti-agent -version
 | `ram`     | total/available/used/cached, used %, swap total/used/% |
 | `disk`    | per-partition total/used/free/%, per-device I/O counters, SMART health (via `smartctl` when present) |
 | `network` | per-interface addrs/MAC/MTU/up + traffic counters (bytes, packets, errors, drops), DNS servers, default gateway |
+| `processes` | top-N by CPU/RAM (configurable `top_n`, `sort_by`): pid, name, user, cpu%, RSS, exe path, priority, threads |
+| `services` | service inventory + state: systemd units (Linux) / Service Control Manager via WMI (Windows), with running/failed counts and start mode |
+| `software` | installed programs + versions: dpkg/rpm (Linux) or Uninstall registry keys (Windows) |
+
+Two subsystems complement the collectors:
+
+- **Remote scripts** (`scripts` config): the Core issues a `run_script` command
+  (bash/sh/powershell/cmd/python); the agent runs it under an interpreter
+  allow-list with a timeout ceiling and returns exit code + stdout/stderr.
+  Disabled by default.
+- **Alerts** (`alerts` config): after each cycle the agent evaluates CPU/RAM/disk
+  thresholds locally and attaches any fired alerts to the envelope as an
+  `alerts` result — immediate signal without server-side rules.
 
 Verified live payload (smoke test, Ubuntu 26.04 / KVM):
 
@@ -231,25 +244,26 @@ configured. Schema version is carried as `schema: "mrti.v1"`.
 The foundation intentionally makes each remaining feature an additive module or
 subsystem, not a rewrite.
 
-**Implemented (v0.1):** project skeleton · config · logging · SQLite outbox ·
-auth · HTTPS transport · module registry & lifecycle · `system`/`cpu`/`ram`/
-`disk`/`network` collectors · gRPC plugin system + reference plugin · service
-install (systemd/Windows) · cross-compilation.
+**Implemented (v0.1 — foundation):** project skeleton · config · logging ·
+SQLite outbox · auth · HTTPS transport · module registry & lifecycle ·
+`system`/`cpu`/`ram`/`disk`/`network` collectors · gRPC plugin system +
+reference plugin · service install (systemd/Windows) · cross-compilation.
 
-**Next collectors (native modules or plugins):** `services` (systemd/Windows
-Services) · `processes` · `software`/inventory · `eventlogs` (Journal/Event
+**Implemented (v0.2 — Phase 2):** `processes`, `services` (systemd/Windows
+Services), `software`/inventory collectors · **remote scripts** subsystem
+(`run_script`: bash/sh/powershell/cmd/python with allow-list + timeout) ·
+**alerts** subsystem (local CPU/RAM/disk threshold evaluation attached to the
+envelope). All verified end-to-end.
+
+**Next collectors (native modules or plugins):** `eventlogs` (Journal/Event
 Viewer) · `docker` · `snmp` · `ups` (NUT/APC/…) · `temperature` ·
 `virtualization` detection.
 
 **Next subsystems:**
-- **Remote scripts** — command type `run_script` (PowerShell/CMD/Bash/Python)
-  with sandboxed execution and result upload (wiring already present in
-  `handleCommand`).
 - **Self-update** — signed binary download, version pinning, rollback.
-- **Alerts** — threshold evaluation (CPU/RAM/disk/service/UPS/temperature/ping)
-  emitted as first-class events.
+- **More alert sources** — service-stopped, UPS battery, ping, temperature.
 - **WebSocket / MQTT transports** — flesh out the prepared back-ends.
-- **Central control** — Core-pushed config and module toggling.
+- **Central control** — Core-pushed config and runtime module toggling.
 
 ---
 

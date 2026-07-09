@@ -57,3 +57,24 @@ plugins:
   dir: "plugins"
   enabled: []
     # - ping   # requires plugins/ping[.exe] built from plugins/example-ping
+
+scripts:
+  # Remote script execution (run_script commands from the Core / MRTOps).
+  # High-privilege capability — disabled by default; enable centrally per agent.
+  enabled: false
+  allowed_interpreters: ["bash", "sh", "powershell", "cmd", "python", "python3"]
+  max_timeout_seconds: 300
+  work_dir: ""          # where scripts are staged; system temp dir if empty
+
+alerts:
+  # Local threshold evaluation after each collection cycle. Fired alerts are
+  # attached to the metrics envelope as an "alerts" result.
+  enabled: true
+  cpu_percent: 90       # warn when overall CPU usage >= this
+  mem_percent: 90       # warn when RAM used >= this
+  disk_percent: 90      # warn when any partition used >= this
+
+# Additional collectors available (enable under modules.enabled):
+#   processes  — top processes by CPU/RAM (settings: top_n, sort_by)
+#   services   — systemd units / Windows services
+#   software   — installed programs and versions

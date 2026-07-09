@@ -17,11 +17,13 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
+	"github.com/jromanMRT/mrti-agent/internal/alerts"
 	"github.com/jromanMRT/mrti-agent/internal/auth"
 	"github.com/jromanMRT/mrti-agent/internal/cache"
 	"github.com/jromanMRT/mrti-agent/internal/config"
 	"github.com/jromanMRT/mrti-agent/internal/model"
 	"github.com/jromanMRT/mrti-agent/internal/pluginhost"
+	"github.com/jromanMRT/mrti-agent/internal/scripts"
 	"github.com/jromanMRT/mrti-agent/internal/transport"
 	"github.com/jromanMRT/mrti-agent/modules"
 
@@ -29,7 +31,10 @@ import (
 	_ "github.com/jromanMRT/mrti-agent/modules/cpu"
 	_ "github.com/jromanMRT/mrti-agent/modules/disk"
 	_ "github.com/jromanMRT/mrti-agent/modules/network"
+	_ "github.com/jromanMRT/mrti-agent/modules/processes"
 	_ "github.com/jromanMRT/mrti-agent/modules/ram"
+	_ "github.com/jromanMRT/mrti-agent/modules/services"
+	_ "github.com/jromanMRT/mrti-agent/modules/software"
 	_ "github.com/jromanMRT/mrti-agent/modules/system"
 
 	"github.com/shirou/gopsutil/v4/host"
@@ -53,6 +58,7 @@ type Agent struct {
 	seq       uint64
 	startTime time.Time
 	self      *process.Process
+	scripts   *scripts.Executor
 
 	hostname string
 }
@@ -87,6 +93,7 @@ func New(cfg *config.Config, log *slog.Logger) (*Agent, error) {
 		auth:      authn,
 		startTime: time.Now(),
 		self:      self,
+		scripts:   scripts.NewExecutor(cfg.Scripts),
 		hostname:  hostname,
 	}
 
@@ -206,6 +213,22 @@ func (a *Agent) collectOnce(ctx context.Context) {
 			a.log.Warn("module collect error", "module", m.Name(), "err", err)
 		}
 		results = append(results, res)
+	}
+
+	// Evaluate local threshold alerts and attach them as a synthetic module
+	// result so they travel with the metrics that triggered them.
+	if fired := alerts.Evaluate(a.cfg.Alerts, results); len(fired) > 0 {
+		if data, err := json.Marshal(fired); err == nil {
+			results = append(results, model.ModuleResult{
+				Module:      "alerts",
+				CollectedAt: time.Now(),
+				Data:        data,
+			})
+		}
+		for _, al := range fired {
+			a.log.Warn("alert", "rule", al.Rule, "severity", al.Severity,
+				"resource", al.Resource, "value", al.Value)
+		}
 	}
 
 	a.seq++
@@ -334,6 +357,8 @@ func (a *Agent) handleCommand(ctx context.Context, cmd model.Command) {
 	case "ping", "noop":
 		res.OK = true
 		res.Output = "pong"
+	case "run_script":
+		a.runScript(ctx, cmd, &res)
 	default:
 		res.OK = false
 		res.Error = fmt.Sprintf("command type %q not supported by this agent version", cmd.Type)
@@ -341,6 +366,30 @@ func (a *Agent) handleCommand(ctx context.Context, cmd model.Command) {
 	}
 	if payload, err := json.Marshal(res); err == nil {
 		_ = a.cache.Enqueue("command_result", payload)
+	}
+}
+
+// runScript executes a Core-issued "run_script" command and records the full
+// execution result (stdout/stderr/exit) as JSON in the command result output.
+func (a *Agent) runScript(ctx context.Context, cmd model.Command, res *model.CommandResult) {
+	var req scripts.Request
+	if err := json.Unmarshal(cmd.Payload, &req); err != nil {
+		res.Error = "invalid run_script payload: " + err.Error()
+		return
+	}
+	a.log.Info("running remote script", "id", cmd.ID, "interpreter", req.Interpreter)
+	result := a.scripts.Run(ctx, req)
+
+	if out, err := json.Marshal(result); err == nil {
+		res.Output = string(out)
+	}
+	res.OK = result.Error == "" && !result.TimedOut && result.ExitCode == 0
+	if !res.OK && res.Error == "" {
+		if result.Error != "" {
+			res.Error = result.Error
+		} else {
+			res.Error = fmt.Sprintf("script exited with code %d", result.ExitCode)
+		}
 	}
 }
 
