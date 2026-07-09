@@ -5,6 +5,7 @@ go 1.26.5
 require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/google/uuid v1.6.0
+	github.com/gosnmp/gosnmp v1.43.2
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/kardianos/service v1.3.0

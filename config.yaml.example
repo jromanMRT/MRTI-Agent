@@ -70,9 +70,11 @@ alerts:
   # Local threshold evaluation after each collection cycle. Fired alerts are
   # attached to the metrics envelope as an "alerts" result.
   enabled: true
-  cpu_percent: 90       # warn when overall CPU usage >= this
-  mem_percent: 90       # warn when RAM used >= this
-  disk_percent: 90      # warn when any partition used >= this
+  cpu_percent: 90        # warn when overall CPU usage >= this
+  mem_percent: 90        # warn when RAM used >= this
+  disk_percent: 90       # warn when any partition used >= this
+  ups_battery: 50        # warn when a UPS battery charge < this (and on-battery/low-battery)
+  service_stopped: false # alert on services in "failed" state (needs services module)
 
 # Additional collectors available (enable under modules.enabled):
 #   processes  — top processes by CPU/RAM (settings: top_n, sort_by)
@@ -81,3 +83,18 @@ alerts:
 #   docker     — containers, state, restart count (settings: host, stats)
 #   eventlogs  — recent errors/warnings from journald / Windows Event Log
 #                (settings: since e.g. "1h", max, logs [System, Application])
+#   ups        — UPS status via NUT (settings: driver, host, port, name, include_raw)
+#   snmp       — poll remote SNMP devices (settings: targets [{name,host,version,community,oids}])
+#
+# Example module settings (place under modules.config):
+#   ups:
+#     driver: nut
+#     host: 127.0.0.1
+#     port: 3493
+#   snmp:
+#     targets:
+#       - name: core-switch
+#         host: 192.168.1.10
+#         version: "2c"
+#         community: public
+#         oids: { ifNumber: "1.3.6.1.2.1.2.1.0" }

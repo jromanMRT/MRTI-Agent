@@ -40,10 +40,12 @@ type ScriptsConfig struct {
 
 // AlertsConfig holds local threshold rules evaluated after each collection.
 type AlertsConfig struct {
-	Enabled     bool    `yaml:"enabled"`
-	CPUPercent  float64 `yaml:"cpu_percent"`  // warn above this overall CPU %
-	MemPercent  float64 `yaml:"mem_percent"`  // warn above this RAM used %
-	DiskPercent float64 `yaml:"disk_percent"` // warn above this per-partition used %
+	Enabled        bool    `yaml:"enabled"`
+	CPUPercent     float64 `yaml:"cpu_percent"`     // warn above this overall CPU %
+	MemPercent     float64 `yaml:"mem_percent"`     // warn above this RAM used %
+	DiskPercent    float64 `yaml:"disk_percent"`    // warn above this per-partition used %
+	UPSBattery     float64 `yaml:"ups_battery"`     // warn when battery charge % drops below this
+	ServiceStopped bool    `yaml:"service_stopped"` // alert on services in "failed" state
 }
 
 type AgentConfig struct {
@@ -144,10 +146,12 @@ func Default() *Config {
 			MaxTimeoutSeconds:   300,
 		},
 		Alerts: AlertsConfig{
-			Enabled:     true,
-			CPUPercent:  90,
-			MemPercent:  90,
-			DiskPercent: 90,
+			Enabled:        true,
+			CPUPercent:     90,
+			MemPercent:     90,
+			DiskPercent:    90,
+			UPSBattery:     50,
+			ServiceStopped: false,
 		},
 	}
 }

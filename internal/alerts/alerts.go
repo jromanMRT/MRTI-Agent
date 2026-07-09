@@ -86,9 +86,62 @@ func Evaluate(cfg config.AlertsConfig, results []model.ModuleResult) []Alert {
 					}
 				}
 			}
+		case "ups":
+			var d struct {
+				UPSes []struct {
+					Name          string  `json:"name"`
+					Status        string  `json:"status"`
+					BatteryCharge float64 `json:"battery_charge_percent"`
+				} `json:"upses"`
+			}
+			if json.Unmarshal(r.Data, &d) == nil {
+				for _, u := range d.UPSes {
+					if u.Status == "on_battery" || u.Status == "low_battery" {
+						out = append(out, Alert{
+							Rule: "ups_on_battery", Severity: pick(u.Status == "low_battery", Critical, Warning),
+							Resource: "ups:" + u.Name, Value: u.BatteryCharge, Timestamp: now,
+							Message: fmt.Sprintf("UPS %s is %s (battery %.0f%%)", u.Name, u.Status, u.BatteryCharge),
+						})
+					} else if cfg.UPSBattery > 0 && u.BatteryCharge > 0 && u.BatteryCharge < cfg.UPSBattery {
+						out = append(out, Alert{
+							Rule: "ups_battery_low", Severity: Warning,
+							Resource: "ups:" + u.Name, Value: u.BatteryCharge, Threshold: cfg.UPSBattery, Timestamp: now,
+							Message: fmt.Sprintf("UPS %s battery %.0f%% < %.0f%%", u.Name, u.BatteryCharge, cfg.UPSBattery),
+						})
+					}
+				}
+			}
+		case "services":
+			if !cfg.ServiceStopped {
+				continue
+			}
+			var d struct {
+				Services []struct {
+					Name  string `json:"name"`
+					State string `json:"state"`
+				} `json:"services"`
+			}
+			if json.Unmarshal(r.Data, &d) == nil {
+				for _, s := range d.Services {
+					if s.State == "failed" {
+						out = append(out, Alert{
+							Rule: "service_failed", Severity: Warning,
+							Resource: "service:" + s.Name, Timestamp: now,
+							Message: fmt.Sprintf("Service %s is in failed state", s.Name),
+						})
+					}
+				}
+			}
 		}
 	}
 	return out
+}
+
+func pick(cond bool, a, b string) string {
+	if cond {
+		return a
+	}
+	return b
 }
 
 // sev escalates to critical once usage is well past the threshold.

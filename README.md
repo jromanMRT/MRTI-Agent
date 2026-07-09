@@ -163,6 +163,8 @@ mrti-agent -version
 | `software` | installed programs + versions: dpkg/rpm (Linux) or Uninstall registry keys (Windows) |
 | `docker` | containers (all): name, image, state, status, restart count, plus optional live CPU%/memory (`stats: true`); talks to the Engine API over the local socket/named-pipe |
 | `eventlogs` | recent critical/error/warning entries from journald (Linux) or the Windows Event Log via Get-WinEvent; configurable `since`/`max`/`logs` |
+| `ups` | UPS status via a native NUT (Network UPS Tools) client: charge, runtime, in/out voltage, load, temperature, status, manufacturer/model/serial. APC/SNMP drivers pluggable |
+| `snmp` | polls remote SNMP devices (switches/routers/APs/printers/UPS/NAS): standard system group + custom named OIDs, per-device reachability/latency. v1/v2c + v3 (USM) |
 
 Two subsystems complement the collectors:
 
@@ -262,12 +264,17 @@ optional live CPU/RAM over the Engine socket/pipe) and `eventlogs`
 (journald / Windows Event Log, severity-filtered) collectors. Verified
 end-to-end.
 
-**Next collectors (native modules or plugins):** `snmp` · `ups` (NUT/APC/…) ·
-`temperature` · `virtualization` detection.
+**Implemented (v0.4 — Phase 4):** `ups` (native NUT client) and `snmp`
+(gosnmp, v1/v2c/v3) collectors; alert rules extended with UPS on-battery /
+low-battery and service-failed. Verified end-to-end against a real CyberPower
+UPS.
+
+**Next collectors (native modules or plugins):** `temperature` ·
+`virtualization` detection · APC/SNMP UPS drivers.
 
 **Next subsystems:**
 - **Self-update** — signed binary download, version pinning, rollback.
-- **More alert sources** — service-stopped, UPS battery, ping, temperature.
+- **More alert sources** — ping, temperature.
 - **WebSocket / MQTT transports** — flesh out the prepared back-ends.
 - **Central control** — Core-pushed config and runtime module toggling.
 

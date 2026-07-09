@@ -36,8 +36,10 @@ import (
 	_ "github.com/jromanMRT/mrti-agent/modules/processes"
 	_ "github.com/jromanMRT/mrti-agent/modules/ram"
 	_ "github.com/jromanMRT/mrti-agent/modules/services"
+	_ "github.com/jromanMRT/mrti-agent/modules/snmp"
 	_ "github.com/jromanMRT/mrti-agent/modules/software"
 	_ "github.com/jromanMRT/mrti-agent/modules/system"
+	_ "github.com/jromanMRT/mrti-agent/modules/ups"
 
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/process"
