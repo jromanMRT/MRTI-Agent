@@ -1,0 +1,377 @@
+// Package agent is the orchestrator that ties everything together: it builds
+// the active module set (native modules + external plugins), runs the timed
+// collection / heartbeat / flush / command loops, buffers everything through
+// the durable cache and ships it via the configured transport. This is the
+// heart of the MRTI Agent runtime.
+package agent
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"runtime"
+	"sync"
+	"time"
+
+	"log/slog"
+
+	"github.com/google/uuid"
+	"github.com/jromanMRT/mrti-agent/internal/auth"
+	"github.com/jromanMRT/mrti-agent/internal/cache"
+	"github.com/jromanMRT/mrti-agent/internal/config"
+	"github.com/jromanMRT/mrti-agent/internal/model"
+	"github.com/jromanMRT/mrti-agent/internal/pluginhost"
+	"github.com/jromanMRT/mrti-agent/internal/transport"
+	"github.com/jromanMRT/mrti-agent/modules"
+
+	// Blank imports register the built-in modules with the module registry.
+	_ "github.com/jromanMRT/mrti-agent/modules/cpu"
+	_ "github.com/jromanMRT/mrti-agent/modules/disk"
+	_ "github.com/jromanMRT/mrti-agent/modules/network"
+	_ "github.com/jromanMRT/mrti-agent/modules/ram"
+	_ "github.com/jromanMRT/mrti-agent/modules/system"
+
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/process"
+)
+
+// Version is the agent build version, overridable via -ldflags.
+var Version = "0.1.0-dev"
+
+// Agent is the running instance.
+type Agent struct {
+	cfg   *config.Config
+	log   *slog.Logger
+	cache *cache.Cache
+	tr    transport.Transport
+	auth  *auth.Authenticator
+
+	mu   sync.RWMutex
+	mods []modules.Module
+
+	seq       uint64
+	startTime time.Time
+	self      *process.Process
+
+	hostname string
+}
+
+// New constructs an Agent: ensures identity, opens the cache, builds the
+// transport and instantiates every enabled module and plugin.
+func New(cfg *config.Config, log *slog.Logger) (*Agent, error) {
+	if err := ensureAgentID(cfg); err != nil {
+		return nil, err
+	}
+
+	c, err := cache.Open(cfg.Cache.Path, cfg.Cache.MaxQueue)
+	if err != nil {
+		return nil, fmt.Errorf("open cache: %w", err)
+	}
+
+	authn := auth.New(cfg.Server)
+	tr, err := transport.New(cfg, authn)
+	if err != nil {
+		c.Close()
+		return nil, fmt.Errorf("init transport: %w", err)
+	}
+
+	hostname, _ := os.Hostname()
+	self, _ := process.NewProcess(int32(os.Getpid()))
+
+	a := &Agent{
+		cfg:       cfg,
+		log:       log,
+		cache:     c,
+		tr:        tr,
+		auth:      authn,
+		startTime: time.Now(),
+		self:      self,
+		hostname:  hostname,
+	}
+
+	a.buildModules()
+	return a, nil
+}
+
+// buildModules instantiates native modules from the enabled list plus any
+// gRPC plugins, and configures each one.
+func (a *Agent) buildModules() {
+	var active []modules.Module
+
+	for _, name := range a.cfg.Modules.Enabled {
+		m, err := modules.New(name)
+		if err != nil {
+			a.log.Warn("skipping unknown module", "module", name, "err", err)
+			continue
+		}
+		if err := m.Configure(a.cfg.ModuleSettings(name), a.log.With("module", name)); err != nil {
+			a.log.Warn("module configure failed", "module", name, "err", err)
+			continue
+		}
+		active = append(active, m)
+	}
+
+	// External gRPC plugins are appended and treated identically.
+	plugins := pluginhost.Load(a.cfg.Plugins.Dir, a.cfg.Plugins.Enabled, a.log)
+	for _, p := range plugins {
+		if err := p.Configure(a.cfg.ModuleSettings(p.Name()), a.log.With("plugin", p.Name())); err != nil {
+			a.log.Warn("plugin configure failed", "plugin", p.Name(), "err", err)
+			p.Close()
+			continue
+		}
+		active = append(active, p)
+	}
+
+	a.mu.Lock()
+	a.mods = active
+	a.mu.Unlock()
+
+	a.log.Info("modules active", "count", len(active), "names", a.moduleNames())
+}
+
+func (a *Agent) moduleNames() []string {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	names := make([]string, 0, len(a.mods))
+	for _, m := range a.mods {
+		names = append(names, m.Name())
+	}
+	return names
+}
+
+// Run starts all periodic loops and blocks until ctx is cancelled, then shuts
+// down cleanly.
+func (a *Agent) Run(ctx context.Context) error {
+	a.log.Info("mrti-agent starting",
+		"version", Version, "agent_id", a.cfg.Agent.ID,
+		"transport", a.cfg.Server.Transport, "server", a.cfg.Server.URL)
+
+	var wg sync.WaitGroup
+	loop := func(every time.Duration, fn func(context.Context)) {
+		if every <= 0 {
+			return
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Fire once promptly so the Core sees the agent immediately.
+			fn(ctx)
+			t := time.NewTicker(every)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					fn(ctx)
+				}
+			}
+		}()
+	}
+
+	loop(a.cfg.Intervals.Collect, a.collectOnce)
+	loop(a.cfg.Intervals.Heartbeat, a.heartbeatOnce)
+	loop(a.cfg.Intervals.Flush, a.flushOnce)
+	loop(a.cfg.Intervals.Commands, a.pollOnce)
+
+	<-ctx.Done()
+	a.log.Info("shutdown requested, draining")
+	wg.Wait()
+	a.shutdown()
+	return nil
+}
+
+// collectOnce runs every module, assembles an Envelope and persists it.
+func (a *Agent) collectOnce(ctx context.Context) {
+	a.mu.RLock()
+	mods := append([]modules.Module(nil), a.mods...)
+	a.mu.RUnlock()
+
+	results := make([]model.ModuleResult, 0, len(mods))
+	for _, m := range mods {
+		mctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+		start := time.Now()
+		data, err := m.Collect(mctx)
+		cancel()
+
+		res := model.ModuleResult{
+			Module:      m.Name(),
+			CollectedAt: start,
+			Data:        data,
+			DurationMS:  time.Since(start).Milliseconds(),
+		}
+		if err != nil {
+			res.Error = err.Error()
+			a.log.Warn("module collect error", "module", m.Name(), "err", err)
+		}
+		results = append(results, res)
+	}
+
+	a.seq++
+	env := model.Envelope{
+		Schema:    model.SchemaVersion,
+		AgentID:   a.cfg.Agent.ID,
+		Hostname:  a.hostname,
+		Version:   Version,
+		OS:        runtime.GOOS,
+		Arch:      runtime.GOARCH,
+		Tags:      a.cfg.Agent.Tags,
+		Sequence:  a.seq,
+		Timestamp: time.Now(),
+		Results:   results,
+	}
+	payload, err := json.Marshal(env)
+	if err != nil {
+		a.log.Error("marshal envelope", "err", err)
+		return
+	}
+	if err := a.cache.Enqueue("envelope", payload); err != nil {
+		a.log.Error("cache enqueue", "err", err)
+		return
+	}
+	a.log.Debug("envelope queued", "seq", a.seq, "modules", len(results))
+}
+
+// heartbeatOnce sends a lightweight liveness ping directly (best effort; not
+// queued, since a stale heartbeat has no value).
+func (a *Agent) heartbeatOnce(ctx context.Context) {
+	hb := model.Heartbeat{
+		Schema:        model.SchemaVersion,
+		AgentID:       a.cfg.Agent.ID,
+		Hostname:      a.hostname,
+		Version:       Version,
+		OS:            runtime.GOOS,
+		Arch:          runtime.GOARCH,
+		ActiveModules: a.moduleNames(),
+		Timestamp:     time.Now(),
+	}
+	if up, err := host.Uptime(); err == nil {
+		hb.Uptime = int64(up)
+	}
+	a.fillSelfMetrics(&hb)
+
+	payload, err := json.Marshal(hb)
+	if err != nil {
+		return
+	}
+	sctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if err := a.tr.Send(sctx, "heartbeat", payload); err != nil {
+		a.log.Debug("heartbeat send failed", "err", err)
+	}
+}
+
+// fillSelfMetrics records the agent's own CPU/memory footprint so operators
+// can prove the agent is light.
+func (a *Agent) fillSelfMetrics(hb *model.Heartbeat) {
+	if a.self == nil {
+		return
+	}
+	if pct, err := a.self.CPUPercent(); err == nil {
+		hb.SelfCPU = round2(pct)
+	}
+	if mi, err := a.self.MemoryInfo(); err == nil && mi != nil {
+		hb.SelfMemMB = round2(float64(mi.RSS) / (1024 * 1024))
+	}
+}
+
+// flushOnce drains the outbox in order, stopping at the first send failure so
+// ordering and at-least-once delivery are preserved.
+func (a *Agent) flushOnce(ctx context.Context) {
+	items, err := a.cache.Peek(50)
+	if err != nil {
+		a.log.Error("cache peek", "err", err)
+		return
+	}
+	if len(items) == 0 {
+		return
+	}
+
+	var acked []int64
+	for _, it := range items {
+		sctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		err := a.tr.Send(sctx, it.Kind, it.Payload)
+		cancel()
+		if err != nil {
+			a.log.Debug("flush send failed, will retry", "err", err, "queued", len(items)-len(acked))
+			break
+		}
+		acked = append(acked, it.ID)
+	}
+	if len(acked) > 0 {
+		if err := a.cache.Ack(acked); err != nil {
+			a.log.Error("cache ack", "err", err)
+		}
+		a.log.Debug("flushed", "sent", len(acked))
+	}
+}
+
+// pollOnce fetches and dispatches commands from the Core.
+func (a *Agent) pollOnce(ctx context.Context) {
+	pctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	cmds, err := a.tr.Poll(pctx, a.cfg.Agent.ID)
+	if err != nil {
+		a.log.Debug("poll commands failed", "err", err)
+		return
+	}
+	for _, cmd := range cmds {
+		a.handleCommand(ctx, cmd)
+	}
+}
+
+// handleCommand executes a Core-issued command and queues the result. The full
+// command set (run_script, self-update, module toggling) lands here as those
+// subsystems come online; unknown commands are acknowledged with an error.
+func (a *Agent) handleCommand(ctx context.Context, cmd model.Command) {
+	res := model.CommandResult{
+		CommandID:  cmd.ID,
+		AgentID:    a.cfg.Agent.ID,
+		FinishedAt: time.Now(),
+	}
+	switch cmd.Type {
+	case "ping", "noop":
+		res.OK = true
+		res.Output = "pong"
+	default:
+		res.OK = false
+		res.Error = fmt.Sprintf("command type %q not supported by this agent version", cmd.Type)
+		a.log.Info("unsupported command", "type", cmd.Type, "id", cmd.ID)
+	}
+	if payload, err := json.Marshal(res); err == nil {
+		_ = a.cache.Enqueue("command_result", payload)
+	}
+}
+
+func (a *Agent) shutdown() {
+	a.mu.RLock()
+	mods := a.mods
+	a.mu.RUnlock()
+	for _, m := range mods {
+		_ = m.Close()
+	}
+	if a.tr != nil {
+		_ = a.tr.Close()
+	}
+	if a.cache != nil {
+		_ = a.cache.Close()
+	}
+	a.log.Info("mrti-agent stopped")
+}
+
+// ensureAgentID generates and persists a stable UUID on first run.
+func ensureAgentID(cfg *config.Config) error {
+	if cfg.Agent.ID != "" {
+		return nil
+	}
+	cfg.Agent.ID = uuid.NewString()
+	if cfg.Path() != "" {
+		if err := cfg.Save(); err != nil {
+			return fmt.Errorf("persist generated agent id: %w", err)
+		}
+	}
+	return nil
+}
+
+func round2(f float64) float64 { return float64(int64(f*100+0.5)) / 100 }

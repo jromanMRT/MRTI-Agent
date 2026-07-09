@@ -1,0 +1,22 @@
+[Unit]
+Description=MRTI Agent - infrastructure monitoring agent
+Documentation=https://github.com/jromanMRT/mrti-agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust paths to your install location.
+ExecStart=/opt/mrti-agent/mrti-agent -config /opt/mrti-agent/config.yaml
+WorkingDirectory=/opt/mrti-agent
+Restart=always
+RestartSec=5
+# Keep the agent light and contained.
+Nice=10
+# Hardening (relax if a module needs more access, e.g. SMART needs devices).
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

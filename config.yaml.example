@@ -1,0 +1,59 @@
+# MRTI Agent configuration
+# ------------------------------------------------------------------------------
+# This file is the single source of truth for what the agent does. The MRTI
+# Core can push an updated copy to change behaviour centrally. Values shown are
+# the built-in defaults unless noted.
+
+agent:
+  id: ""            # stable per-install UUID; auto-generated & saved on first run
+  name: ""          # optional friendly name shown in the panel
+  tags: []          # e.g. ["prod", "datacenter-1", "ubuntu"]
+
+server:
+  url: "https://mrti.local"     # base URL of the MRTI Core
+  transport: "https"            # https | websocket | mqtt (ws/mqtt are prepared)
+  api_key: ""                   # long-lived install key (sent as X-MRTI-API-Key)
+  token: ""                     # optional bearer token
+  jwt: ""                       # optional short-lived JWT (takes precedence)
+  compression: true             # gzip outbound payloads
+  tls:
+    insecure_skip_verify: false # set true ONLY for self-signed dev servers
+    ca_cert: ""                 # path to a custom CA bundle (PEM)
+    client_cert: ""             # path to client cert for mutual TLS
+    client_key: ""              # path to client key for mutual TLS
+
+intervals:
+  collect: 30s      # how often modules run
+  heartbeat: 60s    # how often to send a liveness ping
+  flush: 15s        # how often to drain the outbox to the server
+  commands: 30s     # how often to poll the Core for commands
+
+logging:
+  level: "info"     # debug | info | warn | error
+  dir: "logs"
+  max_size_mb: 10
+  max_files: 5
+  console: false    # also mirror logs to stdout (auto-on with -foreground)
+
+cache:
+  path: "cache/mrti.db"
+  max_queue: 10000  # max buffered messages during an outage before trimming oldest
+
+modules:
+  # Toggle collection modules here. The Core can push changes to this list.
+  enabled:
+    - system
+    - cpu
+    - ram
+    - disk
+    - network
+  # Per-module settings, keyed by module name. Example:
+  config: {}
+    # disk:
+    #   smart: true
+
+plugins:
+  # External gRPC collector plugins (separate binaries dropped into this dir).
+  dir: "plugins"
+  enabled: []
+    # - ping   # requires plugins/ping[.exe] built from plugins/example-ping

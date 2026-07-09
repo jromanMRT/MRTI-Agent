@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package mrti.plugin.v1;
+
+option go_package = "github.com/jromanMRT/mrti-agent/proto/collectorpb";
+
+// Collector is the gRPC contract every MRTI plugin implements. Plugins are
+// standalone binaries launched by the agent (via HashiCorp go-plugin) that
+// speak this service over a local, brokered gRPC connection. Payloads are
+// carried as JSON bytes so plugins can evolve their schema independently of
+// the agent core.
+service Collector {
+  // Info returns identifying metadata for the plugin.
+  rpc Info(Empty) returns (PluginInfo);
+  // Configure passes the plugin's settings block (as JSON) once at startup.
+  rpc Configure(ConfigureRequest) returns (Empty);
+  // Collect runs one collection cycle and returns the payload as JSON.
+  rpc Collect(Empty) returns (CollectResponse);
+}
+
+message Empty {}
+
+message PluginInfo {
+  string name = 1;
+  string version = 2;
+  string description = 3;
+}
+
+message ConfigureRequest {
+  bytes settings_json = 1;
+}
+
+message CollectResponse {
+  bytes data_json = 1;
+  string error = 2;
+}

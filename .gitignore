@@ -1,0 +1,21 @@
+# Build output
+/bin/
+/dist/
+*.exe
+mrti-agent
+plugins/ping
+plugins/*/*.bin
+
+# Runtime state (never commit real telemetry/creds)
+/logs/*
+!/logs/.gitkeep
+/cache/*
+!/cache/.gitkeep
+
+# Local config with real credentials (keep config.yaml.example tracked)
+/config.yaml
+
+# Go
+vendor/
+*.test
+*.out
