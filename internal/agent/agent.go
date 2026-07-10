@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"runtime"
 	"sort"
 	"sync"
@@ -144,8 +145,15 @@ func (a *Agent) buildModules() {
 	}
 
 	a.mu.Lock()
+	old := a.mods
 	a.mods = active
 	a.mu.Unlock()
+
+	// Close the previous set (releases plugin subprocesses) after swapping in
+	// the new one, so a rebuild from a config change doesn't leak resources.
+	for _, m := range old {
+		_ = m.Close()
+	}
 
 	a.log.Info("modules active", "count", len(active), "names", a.moduleNames())
 }
@@ -378,6 +386,8 @@ func (a *Agent) handleCommand(ctx context.Context, cmd model.Command) {
 		a.toggleModule(cmd, &res, true)
 	case "disable_module":
 		a.toggleModule(cmd, &res, false)
+	case "set_config":
+		a.applyConfig(cmd, &res)
 	default:
 		res.OK = false
 		res.Error = fmt.Sprintf("command type %q not supported by this agent version", cmd.Type)
@@ -483,6 +493,72 @@ func (a *Agent) toggleModule(cmd model.Command, res *model.CommandResult, enable
 		action = "disabled"
 	}
 	res.Output = fmt.Sprintf("module %q %s", req.Module, action)
+}
+
+// applyConfig applies a full configuration pushed by the Core (the "set_config"
+// command). The payload carries the new config document as YAML (or JSON) under
+// "yaml" or "config". Hot-reloadable parts (modules, plugins, alert thresholds,
+// script/update policy) take effect immediately; changes to the server
+// endpoint, transport or timing intervals require a restart, which the agent
+// performs cleanly so the service manager relaunches with the new settings.
+func (a *Agent) applyConfig(cmd model.Command, res *model.CommandResult) {
+	var p struct {
+		YAML   string          `json:"yaml"`
+		Config json.RawMessage `json:"config"`
+	}
+	if err := json.Unmarshal(cmd.Payload, &p); err != nil {
+		res.Error = "invalid set_config payload: " + err.Error()
+		return
+	}
+	var data []byte
+	switch {
+	case p.YAML != "":
+		data = []byte(p.YAML)
+	case len(p.Config) > 0:
+		data = p.Config // JSON is valid YAML
+	default:
+		res.Error = "set_config requires a 'yaml' or 'config' field"
+		return
+	}
+
+	newCfg, err := config.FromBytes(data)
+	if err != nil {
+		res.Error = "parse pushed config: " + err.Error()
+		return
+	}
+
+	// Preserve identity and file location across a pushed config.
+	if newCfg.Agent.ID == "" {
+		newCfg.Agent.ID = a.cfg.Agent.ID
+	}
+	newCfg.SetPath(a.cfg.Path())
+
+	// Some changes can't be hot-applied without reconnecting/reworking the run
+	// loop; for those we persist and restart.
+	needRestart := !reflect.DeepEqual(a.cfg.Server, newCfg.Server) ||
+		!reflect.DeepEqual(a.cfg.Intervals, newCfg.Intervals) ||
+		!reflect.DeepEqual(a.cfg.Logging, newCfg.Logging)
+
+	if err := newCfg.Save(); err != nil {
+		res.Error = "persist pushed config: " + err.Error()
+		return
+	}
+
+	// Swap config and hot-reload the live subsystems.
+	a.cfg = newCfg
+	a.scripts = scripts.NewExecutor(newCfg.Scripts)
+	a.updater = updater.New(newCfg.Update, nil)
+	a.buildModules()
+
+	a.log.Info("configuration applied from Core", "restart", needRestart,
+		"modules", a.moduleNames())
+	res.OK = true
+	if needRestart {
+		res.Output = "config applied; restarting to apply transport/interval changes"
+		a.pendingRestart = true
+	} else {
+		res.Output = "config applied live"
+	}
 }
 
 func (a *Agent) setModuleEnabled(name string, enable bool) error {

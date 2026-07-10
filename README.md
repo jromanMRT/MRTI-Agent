@@ -302,8 +302,16 @@ telemetry to `mrti/<agentID>/<kind>` and subscribes to
 transports (HTTPS · WebSocket · MQTT) are now live. Integration-tested against
 an embedded broker.
 
+**Implemented (v0.9 — Phase 9):** **central config control** — the Core pushes
+a full config with a `set_config` command; the agent validates and persists it,
+hot-reloading modules/plugins/alerts/script+update policy immediately and
+restarting cleanly only when the server endpoint, transport or intervals
+change. Verified end-to-end (a module enabled live via pushed config).
+
+Supported commands today: `ping` · `run_script` · `update` · `enable_module` ·
+`disable_module` · `set_config`.
+
 **Next subsystems:**
-- **Central control** — Core-pushed full config (module toggling is already live).
 - **More alert sources** — ping/reachability, temperature thresholds.
 - **APC/SNMP UPS drivers** to complement the NUT driver.
 

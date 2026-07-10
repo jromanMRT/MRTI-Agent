@@ -57,7 +57,7 @@ type Heartbeat struct {
 // receives these over the transport channel.
 type Command struct {
 	ID       string          `json:"id"`
-	Type     string          `json:"type"` // "enable_module","disable_module","run_script","update", ...
+	Type     string          `json:"type"` // ping | run_script | update | enable_module | disable_module | set_config
 	Payload  json.RawMessage `json:"payload,omitempty"`
 	IssuedAt time.Time       `json:"issued_at"`
 }

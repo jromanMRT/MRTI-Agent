@@ -173,26 +173,40 @@ func Default() *Config {
 // Load reads config from path, layering it over defaults. A missing file is
 // not an error: defaults are used and the file is created on first Save.
 func Load(path string) (*Config, error) {
-	cfg := Default()
-	cfg.path = path
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
+			cfg := Default()
+			cfg.path = path
 			return cfg, nil
 		}
 		return nil, fmt.Errorf("read config %s: %w", path, err)
 	}
-	if err := yaml.Unmarshal(data, cfg); err != nil {
+	cfg, err := FromBytes(data)
+	if err != nil {
 		return nil, fmt.Errorf("parse config %s: %w", path, err)
 	}
 	cfg.path = path
+	return cfg, nil
+}
+
+// FromBytes parses a YAML (or JSON — JSON is valid YAML) config document over
+// the built-in defaults, applying env overrides and validation. This is what
+// lets the Core push a full config to an agent at runtime.
+func FromBytes(data []byte) (*Config, error) {
+	cfg := Default()
+	if err := yaml.Unmarshal(data, cfg); err != nil {
+		return nil, err
+	}
 	applyEnvOverrides(cfg)
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
 	return cfg, nil
 }
+
+// SetPath sets the file this config should be saved to.
+func (c *Config) SetPath(path string) { c.path = path }
 
 // applyEnvOverrides lets a few sensitive/deploy-time values come from the
 // environment, which is handy for containerized or scripted installs.
