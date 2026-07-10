@@ -2,7 +2,6 @@ package transport
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -175,6 +174,3 @@ func (t *mqttTransport) Close() error {
 
 // compile-time assertion that mqttTransport satisfies Transport.
 var _ Transport = (*mqttTransport)(nil)
-
-// tlsConfig kept referenced for clarity that MQTT reuses HTTPS TLS building.
-var _ = (*tls.Config)(nil)
