@@ -19,3 +19,8 @@ plugins/*/*.bin
 vendor/
 *.test
 *.out
+
+# Demo runtime artifacts
+/demo/logs/
+/demo/cache/
+/demo/config.demo.local.yaml

@@ -1,0 +1,70 @@
+# MRTI Agent — local demo config. Points at the mock Core (demo/mock-core.py)
+# and enables every module so you can see the full feature set at once.
+agent:
+  name: "demo-agent"
+  tags: ["demo", "local"]
+
+server:
+  url: "http://127.0.0.1:8477"
+  transport: "https"          # the HTTPS client speaks plain http:// too
+  api_key: "demo-api-key"
+  compression: false          # off so the mock Core reads plain JSON
+  tls:
+    insecure_skip_verify: true
+
+intervals:
+  collect: 5s
+  heartbeat: 8s
+  flush: 2s
+  commands: 4s
+
+logging:
+  level: "info"
+  dir: "demo/logs"
+  console: false              # keep the console clean for the Core dashboard
+
+cache:
+  path: "demo/cache/demo.db"
+  max_queue: 1000
+
+alerts:
+  enabled: true
+  cpu_percent: 90
+  mem_percent: 85
+  disk_percent: 85
+  temp_celsius: 40            # low-ish so it likely fires on a busy host
+  ups_battery: 50
+  ping_latency_ms: 300
+
+# Remote scripts enabled so the demo can show a run_script round-trip.
+scripts:
+  enabled: true
+  allowed_interpreters: ["bash", "sh"]
+  max_timeout_seconds: 30
+
+modules:
+  enabled:
+    - system
+    - cpu
+    - ram
+    - disk
+    - network
+    - processes
+    - services
+    - software
+    - docker
+    - eventlogs
+    - temperature
+    - virtualization
+    - inventory
+    - ups
+    # - snmp        # enable and add targets if you have SNMP devices
+  config:
+    processes: { top_n: 5, sort_by: cpu }
+    eventlogs: { since: "24h", max: 20 }
+    ups: { driver: nut, host: 127.0.0.1, port: 3493 }
+
+plugins:
+  dir: "plugins"
+  enabled:
+    - ping          # requires: go build -o plugins/ping ./plugins/example-ping
