@@ -51,8 +51,8 @@ Zabbix / Wazuh) — but fully owned by you.
   *collect* (run modules → build an envelope → enqueue), *flush* (drain the
   outbox to the server in order), *heartbeat* (cheap liveness + self-usage),
   and *commands* (poll the Core and dispatch).
-- **Transport** (`internal/transport`) is an interface with a complete HTTPS
-  back-end and prepared WebSocket/MQTT back-ends, selectable from config.
+- **Transport** (`internal/transport`) is an interface with three complete
+  back-ends — HTTPS, WebSocket and MQTT — selectable from config.
 - **Cache** (`internal/cache`) is a bounded FIFO outbox in SQLite for
   at-least-once, ordered delivery.
 - **Modules** (`modules/*`) implement one small interface. Native modules are
@@ -296,10 +296,16 @@ connection that multiplexes outbound telemetry and Core-pushed commands, with
 auth on the handshake, TLS reuse and lazy reconnect/backoff. Selectable via
 `server.transport: websocket`. Integration-tested against a live WS server.
 
+**Implemented (v0.8 — Phase 8):** **MQTT transport** (Eclipse Paho) — publishes
+telemetry to `mrti/<agentID>/<kind>` and subscribes to
+`mrti/<agentID>/commands`, with auth, TLS reuse and auto-reconnect. All three
+transports (HTTPS · WebSocket · MQTT) are now live. Integration-tested against
+an embedded broker.
+
 **Next subsystems:**
-- **MQTT transport** — flesh out the prepared back-end.
 - **Central control** — Core-pushed full config (module toggling is already live).
 - **More alert sources** — ping/reachability, temperature thresholds.
+- **APC/SNMP UPS drivers** to complement the NUT driver.
 
 ---
 

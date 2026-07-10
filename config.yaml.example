@@ -11,7 +11,7 @@ agent:
 
 server:
   url: "https://mrti.local"     # base URL of the MRTI Core
-  transport: "https"            # https | websocket (both implemented) | mqtt (prepared)
+  transport: "https"            # https | websocket | mqtt (all implemented)
   api_key: ""                   # long-lived install key (sent as X-MRTI-API-Key)
   token: ""                     # optional bearer token
   jwt: ""                       # optional short-lived JWT (takes precedence)
