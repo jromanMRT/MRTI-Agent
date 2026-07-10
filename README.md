@@ -286,8 +286,13 @@ signed self-update round-trip.
 **Next collectors (native modules or plugins):** APC/SNMP UPS drivers · more
 inventory (GPU/PCI/USB/monitors).
 
+**Implemented (v0.6 — Phase 6):** real **WebSocket transport** — a persistent
+connection that multiplexes outbound telemetry and Core-pushed commands, with
+auth on the handshake, TLS reuse and lazy reconnect/backoff. Selectable via
+`server.transport: websocket`. Integration-tested against a live WS server.
+
 **Next subsystems:**
-- **WebSocket / MQTT transports** — flesh out the prepared back-ends.
+- **MQTT transport** — flesh out the prepared back-end.
 - **Central control** — Core-pushed full config (module toggling is already live).
 - **More alert sources** — ping/reachability, temperature thresholds.
 

@@ -4,6 +4,7 @@ go 1.26.5
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
+	github.com/coder/websocket v1.8.15
 	github.com/google/uuid v1.6.0
 	github.com/gosnmp/gosnmp v1.43.2
 	github.com/hashicorp/go-hclog v1.6.3
