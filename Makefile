@@ -6,21 +6,39 @@ LDFLAGS := -s -w -X github.com/jromanMRT/mrti-agent/internal/agent.Version=$(VER
 PKG     := github.com/jromanMRT/mrti-agent
 BIN     := mrti-agent
 
-.PHONY: all build build-linux build-windows build-plugins proto tidy run clean test vet install-service
+.PHONY: all build build-core build-linux build-windows build-plugins package-windows proto tidy run run-core clean test vet install-service
 
-all: build
+all: build build-core
 
 ## Build the agent for the host platform
 build:
 	go build -trimpath -ldflags "$(LDFLAGS)" -o bin/$(BIN) ./cmd/mrti-agent
 
-## Cross-compile for Linux amd64
+## Build the reference Core server for the host platform
+build-core:
+	go build -trimpath -ldflags "-s -w" -o bin/mrti-core ./cmd/mrti-core
+
+## Cross-compile the agent for Linux amd64
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o dist/linux-amd64/$(BIN) ./cmd/mrti-agent
 
-## Cross-compile for Windows amd64
+## Cross-compile agent + core + plugin for Windows amd64
 build-windows:
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o dist/windows-amd64/$(BIN).exe ./cmd/mrti-agent
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o dist/windows-amd64/mrti-core.exe ./cmd/mrti-core
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -o dist/windows-amd64/plugins/ping.exe ./plugins/example-ping
+
+## Assemble a ready-to-install Windows zip (agent + core + plugin + config + installer)
+package-windows: build-windows
+	rm -rf dist/mrti-agent-windows-amd64 dist/mrti-agent-windows-amd64.zip
+	mkdir -p dist/mrti-agent-windows-amd64/plugins
+	cp dist/windows-amd64/mrti-agent.exe dist/windows-amd64/mrti-core.exe dist/mrti-agent-windows-amd64/
+	cp dist/windows-amd64/plugins/ping.exe dist/mrti-agent-windows-amd64/plugins/
+	cp config.yaml.example dist/mrti-agent-windows-amd64/config.yaml
+	cp packaging/windows/install-windows.ps1 dist/mrti-agent-windows-amd64/install-windows.ps1
+	cp packaging/windows/README.txt dist/mrti-agent-windows-amd64/README.txt
+	cd dist && (command -v zip >/dev/null 2>&1 && zip -qr mrti-agent-windows-amd64.zip mrti-agent-windows-amd64 || python3 -c "import shutil;shutil.make_archive('mrti-agent-windows-amd64','zip','.','mrti-agent-windows-amd64')")
+	@echo "Package: dist/mrti-agent-windows-amd64.zip"
 
 ## Build the reference ping plugin into the plugins directory
 build-plugins:
@@ -37,9 +55,13 @@ proto:
 tidy:
 	go mod tidy
 
-## Run in the foreground with console logging
+## Run the agent in the foreground with console logging
 run: build
 	./bin/$(BIN) -foreground -config config.yaml
+
+## Run the Core server (dashboard + API + metrics)
+run-core: build-core
+	./bin/mrti-core -addr :8477 -db core.db
 
 vet:
 	go vet ./...

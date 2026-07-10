@@ -5,11 +5,37 @@ A professional, modular, lightweight infrastructure-monitoring agent for
 **MRTI Core** and to grow into a full fleet-management platform (à la Datadog /
 Zabbix / Wazuh) — but fully owned by you.
 
-> Status: **v0.1 foundation.** Core runtime, transport, cache, module system,
-> the five core collectors and the gRPC plugin system are implemented and
-> verified end-to-end on Linux and cross-compiling to Windows. The remaining
-> collectors and subsystems are scaffolded with a clear path (see
-> [Roadmap](#roadmap)).
+> Status: **working end-to-end.** 16 collectors, gRPC plugins, three transports
+> (HTTPS/WebSocket/MQTT), remote scripts, alerts, signed self-update, central
+> config control, and a reference **Core server** (REST API + Prometheus
+> metrics + dashboard) — all verified on live hardware. See the [Roadmap](#roadmap).
+
+## Two binaries
+
+- **`mrti-agent`** — the monitoring agent that runs on each host (this is most of
+  the repo).
+- **`mrti-core`** ([`cmd/mrti-core`](cmd/mrti-core)) — a self-hostable reference
+  **Core server**: it ingests agent telemetry and exposes it as a JSON REST API,
+  a Prometheus `/metrics` endpoint and a live HTML dashboard, and queues commands
+  for agents. See **[docs/CORE-API.md](docs/CORE-API.md)**.
+
+### Try it in one command
+
+```bash
+./demo/run-demo.sh          # builds + runs the agent against a mock Core with a live report
+# or, the real Core + API + dashboard:
+make run-core               # http://localhost:8477/  (dashboard, /api/v1/agents, /metrics)
+```
+
+### Windows package
+
+```bash
+make package-windows        # -> dist/mrti-agent-windows-amd64.zip
+```
+
+The zip contains `mrti-agent.exe`, `mrti-core.exe`, the ping plugin, a
+`config.yaml` and `install-windows.ps1` (registers the Windows service). See
+[packaging/windows/README.txt](packaging/windows/README.txt).
 
 ---
 
