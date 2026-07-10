@@ -167,6 +167,7 @@ mrti-agent -version
 | `snmp` | polls remote SNMP devices (switches/routers/APs/printers/UPS/NAS): standard system group + custom named OIDs, per-device reachability/latency. v1/v2c + v3 (USM) |
 | `temperature` | all thermal sensors (CPU/chipset/NVMe/ACPI zones) via hwmon (Linux) / WMI thermal zones (Windows), with the hottest summarised |
 | `virtualization` | detects hypervisor/container (KVM/VMware/Hyper-V/VirtualBox/Xen/Proxmox/Docker/LXC/WSL) and whether the host is itself a hypervisor |
+| `inventory` | hardware inventory: GPUs, PCI devices, USB devices and monitors — sysfs + EDID + pci.ids on Linux, WMI on Windows |
 
 Two subsystems complement the collectors:
 
@@ -283,8 +284,12 @@ collectors; **signed self-update** subsystem (SHA-256 + Ed25519, atomic swap,
 `enable_module`/`disable_module` commands. Verified end-to-end incl. a full
 signed self-update round-trip.
 
-**Next collectors (native modules or plugins):** APC/SNMP UPS drivers · more
-inventory (GPU/PCI/USB/monitors).
+**Implemented (v0.7 — Phase 7):** `inventory` collector — GPUs, PCI/USB
+devices and monitors (sysfs + EDID + pci.ids on Linux, WMI on Windows).
+Verified on live hardware (Intel UHD 630, HP printer + CyberPower UPS on USB,
+17 PCI devices with resolved names).
+
+**Next collectors (native modules or plugins):** APC/SNMP UPS drivers.
 
 **Implemented (v0.6 — Phase 6):** real **WebSocket transport** — a persistent
 connection that multiplexes outbound telemetry and Core-pushed commands, with

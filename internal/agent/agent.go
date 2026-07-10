@@ -34,6 +34,7 @@ import (
 	_ "github.com/jromanMRT/mrti-agent/modules/disk"
 	_ "github.com/jromanMRT/mrti-agent/modules/docker"
 	_ "github.com/jromanMRT/mrti-agent/modules/eventlogs"
+	_ "github.com/jromanMRT/mrti-agent/modules/inventory"
 	_ "github.com/jromanMRT/mrti-agent/modules/network"
 	_ "github.com/jromanMRT/mrti-agent/modules/processes"
 	_ "github.com/jromanMRT/mrti-agent/modules/ram"

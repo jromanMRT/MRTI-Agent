@@ -95,6 +95,7 @@ update:
 #   snmp           — poll remote SNMP devices (settings: targets [{name,host,version,community,oids}])
 #   temperature    — all thermal sensors
 #   virtualization — hypervisor/container detection
+#   inventory      — hardware inventory (GPU, PCI, USB, monitors)
 #
 # Example module settings (place under modules.config):
 #   ups:
