@@ -165,6 +165,8 @@ mrti-agent -version
 | `eventlogs` | recent critical/error/warning entries from journald (Linux) or the Windows Event Log via Get-WinEvent; configurable `since`/`max`/`logs` |
 | `ups` | UPS status via a native NUT (Network UPS Tools) client: charge, runtime, in/out voltage, load, temperature, status, manufacturer/model/serial. APC/SNMP drivers pluggable |
 | `snmp` | polls remote SNMP devices (switches/routers/APs/printers/UPS/NAS): standard system group + custom named OIDs, per-device reachability/latency. v1/v2c + v3 (USM) |
+| `temperature` | all thermal sensors (CPU/chipset/NVMe/ACPI zones) via hwmon (Linux) / WMI thermal zones (Windows), with the hottest summarised |
+| `virtualization` | detects hypervisor/container (KVM/VMware/Hyper-V/VirtualBox/Xen/Proxmox/Docker/LXC/WSL) and whether the host is itself a hypervisor |
 
 Two subsystems complement the collectors:
 
@@ -175,6 +177,12 @@ Two subsystems complement the collectors:
 - **Alerts** (`alerts` config): after each cycle the agent evaluates CPU/RAM/disk
   thresholds locally and attaches any fired alerts to the envelope as an
   `alerts` result — immediate signal without server-side rules.
+- **Self-update** (`update` config): the Core issues an `update` command with a
+  download URL, SHA-256 and Ed25519 signature; the agent downloads, verifies
+  integrity **and authenticity** against a configured public key, atomically
+  swaps the binary (keeping a `.bak` for rollback) and exits so the service
+  manager relaunches the new version. Disabled by default; unsigned updates are
+  rejected unless explicitly allowed.
 
 Verified live payload (smoke test, Ubuntu 26.04 / KVM):
 
@@ -269,14 +277,19 @@ end-to-end.
 low-battery and service-failed. Verified end-to-end against a real CyberPower
 UPS.
 
-**Next collectors (native modules or plugins):** `temperature` ·
-`virtualization` detection · APC/SNMP UPS drivers.
+**Implemented (v0.5 — Phase 5):** `temperature` and `virtualization`
+collectors; **signed self-update** subsystem (SHA-256 + Ed25519, atomic swap,
+`.bak` rollback) with unit tests; runtime module toggling via
+`enable_module`/`disable_module` commands. Verified end-to-end incl. a full
+signed self-update round-trip.
+
+**Next collectors (native modules or plugins):** APC/SNMP UPS drivers · more
+inventory (GPU/PCI/USB/monitors).
 
 **Next subsystems:**
-- **Self-update** — signed binary download, version pinning, rollback.
-- **More alert sources** — ping, temperature.
 - **WebSocket / MQTT transports** — flesh out the prepared back-ends.
-- **Central control** — Core-pushed config and runtime module toggling.
+- **Central control** — Core-pushed full config (module toggling is already live).
+- **More alert sources** — ping/reachability, temperature thresholds.
 
 ---
 

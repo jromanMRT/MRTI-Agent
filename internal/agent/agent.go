@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/jromanMRT/mrti-agent/internal/pluginhost"
 	"github.com/jromanMRT/mrti-agent/internal/scripts"
 	"github.com/jromanMRT/mrti-agent/internal/transport"
+	"github.com/jromanMRT/mrti-agent/internal/updater"
 	"github.com/jromanMRT/mrti-agent/modules"
 
 	// Blank imports register the built-in modules with the module registry.
@@ -39,7 +41,9 @@ import (
 	_ "github.com/jromanMRT/mrti-agent/modules/snmp"
 	_ "github.com/jromanMRT/mrti-agent/modules/software"
 	_ "github.com/jromanMRT/mrti-agent/modules/system"
+	_ "github.com/jromanMRT/mrti-agent/modules/temperature"
 	_ "github.com/jromanMRT/mrti-agent/modules/ups"
+	_ "github.com/jromanMRT/mrti-agent/modules/virtualization"
 
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/process"
@@ -63,6 +67,9 @@ type Agent struct {
 	startTime time.Time
 	self      *process.Process
 	scripts   *scripts.Executor
+	updater   *updater.Updater
+
+	pendingRestart bool // set when a self-update was applied; triggers process exit
 
 	hostname string
 }
@@ -98,6 +105,7 @@ func New(cfg *config.Config, log *slog.Logger) (*Agent, error) {
 		startTime: time.Now(),
 		self:      self,
 		scripts:   scripts.NewExecutor(cfg.Scripts),
+		updater:   updater.New(cfg.Update, nil),
 		hostname:  hostname,
 	}
 
@@ -363,13 +371,31 @@ func (a *Agent) handleCommand(ctx context.Context, cmd model.Command) {
 		res.Output = "pong"
 	case "run_script":
 		a.runScript(ctx, cmd, &res)
+	case "update":
+		a.applyUpdate(ctx, cmd, &res)
+	case "enable_module":
+		a.toggleModule(cmd, &res, true)
+	case "disable_module":
+		a.toggleModule(cmd, &res, false)
 	default:
 		res.OK = false
 		res.Error = fmt.Sprintf("command type %q not supported by this agent version", cmd.Type)
 		a.log.Info("unsupported command", "type", cmd.Type, "id", cmd.ID)
 	}
+	res.FinishedAt = time.Now()
 	if payload, err := json.Marshal(res); err == nil {
 		_ = a.cache.Enqueue("command_result", payload)
+	}
+
+	// A self-update swapped the binary: report the result to the Core, then
+	// exit so the service manager (systemd / Windows SC) relaunches the new
+	// binary. In foreground mode this simply stops the agent.
+	if a.pendingRestart {
+		a.log.Info("self-update applied; flushing and restarting")
+		flushCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		a.flushOnce(flushCtx)
+		cancel()
+		os.Exit(0)
 	}
 }
 
@@ -395,6 +421,114 @@ func (a *Agent) runScript(ctx context.Context, cmd model.Command, res *model.Com
 			res.Error = fmt.Sprintf("script exited with code %d", result.ExitCode)
 		}
 	}
+}
+
+func (a *Agent) applyUpdate(ctx context.Context, cmd model.Command, res *model.CommandResult) {
+	var req updater.Request
+	if err := json.Unmarshal(cmd.Payload, &req); err != nil {
+		res.Error = "invalid update payload: " + err.Error()
+		return
+	}
+
+	target, err := os.Executable()
+	if err != nil {
+		res.Error = fmt.Sprintf("resolve executable path: %v", err)
+		return
+	}
+
+	a.log.Info("self-update requested", "id", cmd.ID, "target", target, "version", req.Version)
+	result := a.updater.Apply(ctx, req, target)
+	if out, err := json.Marshal(result); err == nil {
+		res.Output = string(out)
+	}
+	res.OK = result.Applied
+	if !res.OK && res.Error == "" {
+		res.Error = result.Error
+	}
+	if result.Applied {
+		// The new binary is in place; ask the run loop to exit so the service
+		// manager relaunches it. Handled after the result is queued.
+		a.pendingRestart = true
+	}
+}
+
+func (a *Agent) toggleModule(cmd model.Command, res *model.CommandResult, enable bool) {
+	var req struct {
+		Module string `json:"module"`
+	}
+	if err := json.Unmarshal(cmd.Payload, &req); err != nil {
+		res.Error = "invalid module command payload: " + err.Error()
+		return
+	}
+	if req.Module == "" {
+		res.Error = "module name is required"
+		return
+	}
+
+	if err := a.setModuleEnabled(req.Module, enable); err != nil {
+		res.Error = err.Error()
+		return
+	}
+
+	a.log.Info("module toggle", "action", func() string {
+		if enable {
+			return "enable"
+		}
+		return "disable"
+	}(), "module", req.Module)
+	res.OK = true
+	action := "enabled"
+	if !enable {
+		action = "disabled"
+	}
+	res.Output = fmt.Sprintf("module %q %s", req.Module, action)
+}
+
+func (a *Agent) setModuleEnabled(name string, enable bool) error {
+	current := a.cfg.Modules.Enabled
+	if enable {
+		if containsString(current, name) {
+			return nil
+		}
+		if _, err := modules.New(name); err != nil {
+			return fmt.Errorf("unknown module %q", name)
+		}
+		current = append(current, name)
+		sort.Strings(current)
+	} else {
+		if !containsString(current, name) {
+			return nil
+		}
+		current = removeString(current, name)
+	}
+	a.cfg.Modules.Enabled = current
+	a.buildModules()
+	if a.cfg.Path() != "" {
+		if err := a.cfg.Save(); err != nil {
+			return fmt.Errorf("save config: %w", err)
+		}
+	}
+	return nil
+}
+
+func containsString(items []string, value string) bool {
+	for _, item := range items {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
+
+func removeString(items []string, value string) []string {
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		if item == value {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
 }
 
 func (a *Agent) shutdown() {

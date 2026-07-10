@@ -23,9 +23,9 @@ type Sensor struct {
 
 // Stats is the temperature payload.
 type Stats struct {
-	Sensors   []Sensor `json:"sensors"`
-	MaxCelsius float64 `json:"max_celsius"`
-	HottestKey string  `json:"hottest_key,omitempty"`
+	Sensors    []Sensor `json:"sensors"`
+	MaxCelsius float64  `json:"max_celsius"`
+	HottestKey string   `json:"hottest_key,omitempty"`
 }
 
 // Module implements modules.Module.

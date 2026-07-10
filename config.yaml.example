@@ -76,15 +76,25 @@ alerts:
   ups_battery: 50        # warn when a UPS battery charge < this (and on-battery/low-battery)
   service_stopped: false # alert on services in "failed" state (needs services module)
 
+update:
+  # Verified agent self-update via an "update" command from the Core.
+  # Disabled by default. When enabled, updates must pass a SHA-256 check and,
+  # unless allow_unsigned is true, an Ed25519 signature against public_key.
+  enabled: false
+  public_key: ""          # base64 Ed25519 public key used to verify update signatures
+  allow_unsigned: false   # permit updates without a signature (NOT recommended)
+
 # Additional collectors available (enable under modules.enabled):
-#   processes  — top processes by CPU/RAM (settings: top_n, sort_by)
-#   services   — systemd units / Windows services
-#   software   — installed programs and versions
-#   docker     — containers, state, restart count (settings: host, stats)
-#   eventlogs  — recent errors/warnings from journald / Windows Event Log
-#                (settings: since e.g. "1h", max, logs [System, Application])
-#   ups        — UPS status via NUT (settings: driver, host, port, name, include_raw)
-#   snmp       — poll remote SNMP devices (settings: targets [{name,host,version,community,oids}])
+#   processes      — top processes by CPU/RAM (settings: top_n, sort_by)
+#   services       — systemd units / Windows services
+#   software       — installed programs and versions
+#   docker         — containers, state, restart count (settings: host, stats)
+#   eventlogs      — recent errors/warnings from journald / Windows Event Log
+#                    (settings: since e.g. "1h", max, logs [System, Application])
+#   ups            — UPS status via NUT (settings: driver, host, port, name, include_raw)
+#   snmp           — poll remote SNMP devices (settings: targets [{name,host,version,community,oids}])
+#   temperature    — all thermal sensors
+#   virtualization — hypervisor/container detection
 #
 # Example module settings (place under modules.config):
 #   ups:
