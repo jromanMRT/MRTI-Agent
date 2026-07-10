@@ -56,6 +56,8 @@ type AlertsConfig struct {
 	DiskPercent    float64 `yaml:"disk_percent"`    // warn above this per-partition used %
 	UPSBattery     float64 `yaml:"ups_battery"`     // warn when battery charge % drops below this
 	ServiceStopped bool    `yaml:"service_stopped"` // alert on services in "failed" state
+	TempCelsius    float64 `yaml:"temp_celsius"`    // warn when the hottest sensor >= this
+	PingLatencyMS  float64 `yaml:"ping_latency_ms"` // warn when a ping probe latency >= this
 }
 
 type AgentConfig struct {
@@ -162,6 +164,8 @@ func Default() *Config {
 			DiskPercent:    90,
 			UPSBattery:     50,
 			ServiceStopped: false,
+			TempCelsius:    80,
+			PingLatencyMS:  500,
 		},
 		Update: UpdateConfig{
 			Enabled:       false, // enable centrally once a signing key is set

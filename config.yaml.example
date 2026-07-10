@@ -75,6 +75,8 @@ alerts:
   disk_percent: 90       # warn when any partition used >= this
   ups_battery: 50        # warn when a UPS battery charge < this (and on-battery/low-battery)
   service_stopped: false # alert on services in "failed" state (needs services module)
+  temp_celsius: 80       # warn when the hottest sensor >= this (needs temperature module)
+  ping_latency_ms: 500   # warn when a ping probe latency >= this (needs the ping plugin)
 
 update:
   # Verified agent self-update via an "update" command from the Core.
@@ -91,7 +93,7 @@ update:
 #   docker         — containers, state, restart count (settings: host, stats)
 #   eventlogs      — recent errors/warnings from journald / Windows Event Log
 #                    (settings: since e.g. "1h", max, logs [System, Application])
-#   ups            — UPS status via NUT (settings: driver, host, port, name, include_raw)
+#   ups            — UPS status via NUT or APC (settings: driver [nut|apc], host, port, name)
 #   snmp           — poll remote SNMP devices (settings: targets [{name,host,version,community,oids}])
 #   temperature    — all thermal sensors
 #   virtualization — hypervisor/container detection

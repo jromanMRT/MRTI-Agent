@@ -163,7 +163,7 @@ mrti-agent -version
 | `software` | installed programs + versions: dpkg/rpm (Linux) or Uninstall registry keys (Windows) |
 | `docker` | containers (all): name, image, state, status, restart count, plus optional live CPU%/memory (`stats: true`); talks to the Engine API over the local socket/named-pipe |
 | `eventlogs` | recent critical/error/warning entries from journald (Linux) or the Windows Event Log via Get-WinEvent; configurable `since`/`max`/`logs` |
-| `ups` | UPS status via a native NUT (Network UPS Tools) client: charge, runtime, in/out voltage, load, temperature, status, manufacturer/model/serial. APC/SNMP drivers pluggable |
+| `ups` | UPS status via native **NUT** or **APC (apcupsd)** clients: charge, runtime, in/out voltage, load, temperature, status, manufacturer/model/serial. `driver: nut\|apc` |
 | `snmp` | polls remote SNMP devices (switches/routers/APs/printers/UPS/NAS): standard system group + custom named OIDs, per-device reachability/latency. v1/v2c + v3 (USM) |
 | `temperature` | all thermal sensors (CPU/chipset/NVMe/ACPI zones) via hwmon (Linux) / WMI thermal zones (Windows), with the hottest summarised |
 | `virtualization` | detects hypervisor/container (KVM/VMware/Hyper-V/VirtualBox/Xen/Proxmox/Docker/LXC/WSL) and whether the host is itself a hypervisor |
@@ -311,9 +311,14 @@ change. Verified end-to-end (a module enabled live via pushed config).
 Supported commands today: `ping` · `run_script` · `update` · `enable_module` ·
 `disable_module` · `set_config`.
 
-**Next subsystems:**
-- **More alert sources** — ping/reachability, temperature thresholds.
-- **APC/SNMP UPS drivers** to complement the NUT driver.
+**Implemented (v0.10 — Phase 10):** **APC (apcupsd) UPS driver** (native NIS
+protocol, unit-tested) alongside NUT; new **alert sources** — temperature
+(hottest sensor) and ping (unreachable / high-latency via the ping plugin).
+Verified live (temperature alert) and with a fake apcupsd server.
+
+**Next:**
+- **SNMP UPS driver** (RFC 1628 UPS-MIB) to complement NUT/APC.
+- **Release packaging** — signed binaries, `.deb` / `.msi`.
 
 ---
 

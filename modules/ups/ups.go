@@ -65,6 +65,8 @@ func (m *Module) Configure(settings map[string]any, log *slog.Logger) error {
 	switch m.driverName {
 	case "nut":
 		m.drv = newNUTDriver(settings)
+	case "apc":
+		m.drv = newAPCDriver(settings)
 	default:
 		// Unknown/unimplemented driver: Collect reports it rather than crashing.
 		m.drv = nil

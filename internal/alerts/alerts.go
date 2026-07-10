@@ -111,6 +111,40 @@ func Evaluate(cfg config.AlertsConfig, results []model.ModuleResult) []Alert {
 					}
 				}
 			}
+		case "temperature":
+			var d struct {
+				MaxCelsius float64 `json:"max_celsius"`
+				HottestKey string  `json:"hottest_key"`
+			}
+			if json.Unmarshal(r.Data, &d) == nil && cfg.TempCelsius > 0 && d.MaxCelsius >= cfg.TempCelsius {
+				out = append(out, Alert{
+					Rule: "temperature_high", Severity: sev(d.MaxCelsius, cfg.TempCelsius),
+					Resource: "temp:" + d.HottestKey, Value: d.MaxCelsius, Threshold: cfg.TempCelsius, Timestamp: now,
+					Message: fmt.Sprintf("Sensor %s at %.1f°C ≥ %.0f°C", d.HottestKey, d.MaxCelsius, cfg.TempCelsius),
+				})
+			}
+		case "ping":
+			// Emitted by the reference ping plugin: {target,reachable,latency_ms}.
+			var d struct {
+				Target    string  `json:"target"`
+				Reachable bool    `json:"reachable"`
+				LatencyMS float64 `json:"latency_ms"`
+			}
+			if json.Unmarshal(r.Data, &d) == nil {
+				if !d.Reachable {
+					out = append(out, Alert{
+						Rule: "host_unreachable", Severity: Critical,
+						Resource: "ping:" + d.Target, Timestamp: now,
+						Message: fmt.Sprintf("%s is unreachable", d.Target),
+					})
+				} else if cfg.PingLatencyMS > 0 && d.LatencyMS >= cfg.PingLatencyMS {
+					out = append(out, Alert{
+						Rule: "ping_high", Severity: Warning,
+						Resource: "ping:" + d.Target, Value: d.LatencyMS, Threshold: cfg.PingLatencyMS, Timestamp: now,
+						Message: fmt.Sprintf("%s latency %.0fms ≥ %.0fms", d.Target, d.LatencyMS, cfg.PingLatencyMS),
+					})
+				}
+			}
 		case "services":
 			if !cfg.ServiceStopped {
 				continue
