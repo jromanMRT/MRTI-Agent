@@ -24,3 +24,6 @@ vendor/
 /demo/logs/
 /demo/cache/
 /demo/config.demo.local.yaml
+
+# Local server deployment (contains API key + agent id)
+/run/
