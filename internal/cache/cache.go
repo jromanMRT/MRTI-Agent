@@ -7,6 +7,8 @@ package cache
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -27,6 +29,11 @@ type Item struct {
 
 // Open initialises (and migrates) the outbox database at path.
 func Open(path string, maxQueue int) (*Cache, error) {
+	if dir := filepath.Dir(path); dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return nil, fmt.Errorf("create cache dir: %w", err)
+		}
+	}
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("open cache db: %w", err)

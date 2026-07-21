@@ -1,0 +1,19 @@
+[Unit]
+Description=MRTI Core - monitoring server (API + dashboard)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mrtcorporativo
+Group=mrtcorporativo
+WorkingDirectory=/var/www/mrt/MRTI
+ExecStart=/var/www/mrt/MRTI/bin/mrti-core -addr :8477 -db /var/www/mrt/MRTI/run/core.db -api-key y9cLiNbVw74s0T3u2NkFs12g0W6OgDoK
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

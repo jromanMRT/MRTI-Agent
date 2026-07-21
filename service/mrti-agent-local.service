@@ -1,0 +1,21 @@
+[Unit]
+Description=MRTI Agent - infrastructure monitoring agent
+Documentation=https://github.com/jromanMRT/mrti-agent
+After=network-online.target mrti-core.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mrtcorporativo
+Group=mrtcorporativo
+WorkingDirectory=/var/www/mrt/MRTI
+ExecStart=/var/www/mrt/MRTI/bin/mrti-agent -config /var/www/mrt/MRTI/run/agent.yaml
+Restart=always
+RestartSec=5
+Nice=10
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
