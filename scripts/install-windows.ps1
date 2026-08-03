@@ -1,43 +1,29 @@
 <#
 .SYNOPSIS
-  Install the MRTI Agent as a Windows service.
-.DESCRIPTION
-  Copies the agent binary and config into Program Files and registers the
-  service using the agent's own -service install action. Run in an elevated
-  (Administrator) PowerShell.
+  Install the locally built MRTI Agent as a Windows service.
 .EXAMPLE
-  .\install-windows.ps1 -Binary .\dist\windows-amd64\mrti-agent.exe
+  .\scripts\install-windows.ps1 -Config .\config.yaml
 #>
 param(
-    [string]$Binary = ".\dist\windows-amd64\mrti-agent.exe",
-    [string]$InstallDir = "$env:ProgramFiles\MRTI Agent"
+	[string]$Binary = "",
+	[string]$Config = "",
+	[string]$InstallDir = "$env:ProgramFiles\MRTI Agent"
 )
 
 $ErrorActionPreference = "Stop"
+$RepoRoot = Split-Path $PSScriptRoot -Parent
 
-# Require elevation.
-$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    throw "This installer must run as Administrator."
+if ([string]::IsNullOrWhiteSpace($Binary)) {
+	$Binary = Join-Path $RepoRoot "dist\windows-amd64\mrti-agent.exe"
+}
+if ([string]::IsNullOrWhiteSpace($Config)) {
+	$LocalConfig = Join-Path $RepoRoot "config.yaml"
+	if (Test-Path -LiteralPath $LocalConfig -PathType Leaf) {
+		$Config = $LocalConfig
+	} else {
+		$Config = Join-Path $RepoRoot "config.yaml.example"
+	}
 }
 
-if (-not (Test-Path $Binary)) {
-    throw "Agent binary not found at '$Binary'. Build it first: make build-windows"
-}
-
-Write-Host "==> Installing MRTI Agent to $InstallDir"
-New-Item -ItemType Directory -Force -Path $InstallDir, "$InstallDir\logs", "$InstallDir\cache", "$InstallDir\plugins" | Out-Null
-Copy-Item $Binary "$InstallDir\mrti-agent.exe" -Force
-
-if (-not (Test-Path "$InstallDir\config.yaml")) {
-    Copy-Item ".\config.yaml.example" "$InstallDir\config.yaml" -Force
-    Write-Host "==> Installed default config at $InstallDir\config.yaml — EDIT server.url and credentials."
-}
-
-# Register + start the service via the agent's built-in service control.
-$exe = "$InstallDir\mrti-agent.exe"
-& $exe -service install -config "$InstallDir\config.yaml"
-& $exe -service start   -config "$InstallDir\config.yaml"
-
-Write-Host "==> Done. Manage with: Get-Service mrti-agent"
-Write-Host "Logs: $InstallDir\logs\"
+$Installer = Join-Path $RepoRoot "packaging\windows\install-windows.ps1"
+& $Installer -Binary $Binary -Config $Config -InstallDir $InstallDir

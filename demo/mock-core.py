@@ -10,10 +10,11 @@ Run:  python3 demo/mock-core.py
 """
 import gzip
 import json
+import os
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-PORT = 8477
+PORT = int(os.environ.get("MRTI_DEMO_PORT", "8477"))
 commands_sent = {"done": False}
 
 

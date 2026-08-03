@@ -7,30 +7,21 @@ package main
 
 import (
 	"compress/gzip"
+	"crypto/subtle"
 	"encoding/json"
-	"flag"
+	"errors"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/jromanMRT/mrti-agent/internal/model"
 )
 
-func main() {
-	addr := flag.String("addr", ":8477", "listen address")
-	dbPath := flag.String("db", "core.db", "path to the SQLite database")
-	apiKey := flag.String("api-key", "demo-api-key", "API key agents must present on ingest (X-MRTI-API-Key)")
-	flag.Parse()
-
-	store, err := openStore(*dbPath)
-	if err != nil {
-		log.Fatalf("open store: %v", err)
-	}
-	defer store.Close()
-
-	srv := &server{store: store, apiKey: *apiKey}
+func coreHandler(store *Store, apiKey, downloadsDir string) http.Handler {
+	srv := &server{store: store, apiKey: apiKey, downloadsDir: downloadsDir}
 	mux := http.NewServeMux()
 
 	// Agent-facing endpoints.
@@ -38,31 +29,70 @@ func main() {
 	mux.HandleFunc("GET /api/v1/agents/{id}/commands", srv.getCommands)
 
 	// Operator/API endpoints.
-	mux.HandleFunc("GET /api/v1/agents", srv.listAgents)
-	mux.HandleFunc("GET /api/v1/agents/{id}", srv.getAgent)
-	mux.HandleFunc("GET /api/v1/agents/{id}/modules/{module}", srv.getModule)
-	mux.HandleFunc("POST /api/v1/agents/{id}/commands", srv.postCommand)
-	mux.HandleFunc("GET /api/v1/alerts", srv.getAlerts)
-	mux.HandleFunc("GET /api/v1/export", srv.export)
+	mux.HandleFunc("GET /api/v1/agents", srv.requirePortalAccess(srv.listAgents))
+	mux.HandleFunc("GET /api/v1/agents/{id}", srv.requirePortalAccess(srv.getAgent))
+	mux.HandleFunc("PATCH /api/v1/agents/{id}", srv.requireOperatorKey(srv.patchAgent))
+	mux.HandleFunc("DELETE /api/v1/agents/{id}", srv.requireOperatorKey(srv.deleteAgent))
+	mux.HandleFunc("GET /api/v1/agents/{id}/modules/{module}", srv.requirePortalAccess(srv.getModule))
+	mux.HandleFunc("POST /api/v1/agents/{id}/commands", srv.requirePortalAccess(srv.postCommand))
+	mux.HandleFunc("GET /api/v1/alerts", srv.requirePortalAccess(srv.getAlerts))
+	mux.HandleFunc("GET /api/v1/export", srv.requirePortalAccess(srv.export))
 	mux.HandleFunc("GET /metrics", srv.metrics)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
+	mux.HandleFunc("GET /downloads/", srv.downloadsPage)
+	mux.HandleFunc("GET /downloads/files/{name}", srv.downloadFile)
 
 	// Dashboard.
 	mux.HandleFunc("GET /", srv.dashboard)
 
-	handler := logRequests(mux)
-	log.Printf("MRTI Core listening on %s  (db=%s)", *addr, *dbPath)
-	log.Printf("  dashboard : http://localhost%s/", portOnly(*addr))
-	log.Printf("  API       : http://localhost%s/api/v1/agents", portOnly(*addr))
-	log.Printf("  metrics   : http://localhost%s/metrics", portOnly(*addr))
-	if err := http.ListenAndServe(*addr, handler); err != nil {
-		log.Fatal(err)
-	}
+	return logRequests(mux)
 }
 
 type server struct {
-	store  *Store
-	apiKey string
+	store        *Store
+	apiKey       string
+	downloadsDir string
+}
+
+func (s *server) requireOperatorKey(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		provided := r.Header.Get("X-MRTI-API-Key")
+		if s.apiKey != "" && subtle.ConstantTimeCompare([]byte(provided), []byte(s.apiKey)) != 1 {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		next(w, r)
+	}
+}
+
+func (s *server) requirePortalAccess(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authURL := os.Getenv("MRTI_AUTH_MODULE_URL")
+		if authURL == "" {
+			authURL = "http://127.0.0.1:3002/api/auth/module-access/agent-core"
+		}
+		request, err := http.NewRequestWithContext(r.Context(), http.MethodGet, authURL, nil)
+		if err != nil {
+			http.Error(w, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		request.Header.Set("Authorization", r.Header.Get("Authorization"))
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			http.Error(w, "authorization unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		defer response.Body.Close()
+		if response.StatusCode != http.StatusNoContent {
+			status := response.StatusCode
+			if status != http.StatusUnauthorized && status != http.StatusForbidden {
+				status = http.StatusServiceUnavailable
+			}
+			http.Error(w, "unauthorized", status)
+			return
+		}
+		next(w, r)
+	}
 }
 
 // ingest accepts envelopes, heartbeats and command results from agents.
@@ -119,6 +149,48 @@ func (s *server) getAgent(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(raw)
+}
+
+func (s *server) patchAgent(w http.ResponseWriter, r *http.Request) {
+	body, err := readBody(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	var request struct {
+		Archived *bool `json:"archived"`
+	}
+	if err := json.Unmarshal(body, &request); err != nil || request.Archived == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "body must include archived"})
+		return
+	}
+	found, err := s.store.SetAgentArchived(r.PathValue("id"), *request.Archived)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if !found {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "agent not found"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "archived": *request.Archived})
+}
+
+func (s *server) deleteAgent(w http.ResponseWriter, r *http.Request) {
+	deleted, err := s.store.DeleteAgent(r.PathValue("id"))
+	if errors.Is(err, ErrAgentOnline) {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "disconnect the agent before deleting it"})
+		return
+	}
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	if !deleted {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "agent not found"})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *server) getModule(w http.ResponseWriter, r *http.Request) {

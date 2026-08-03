@@ -14,7 +14,7 @@ systemd install of both the Core (server + API + dashboard) and the Agent.
 From the repo root, as root:
 
 ```bash
-make build build-core build-plugins      # or the installer builds them for you
+make build build-core build-plugins package-downloads
 sudo ./scripts/install-server.sh
 ```
 
@@ -30,6 +30,7 @@ Then:
 Dashboard : http://<server-ip>:8477/
 API       : http://<server-ip>:8477/api/v1/agents
 Metrics   : http://<server-ip>:8477/metrics
+Downloads : http://<server-ip>:8477/downloads/
 
 systemctl status mrti-core mrti-agent
 journalctl -u mrti-agent -f
@@ -47,6 +48,20 @@ sudo ufw allow 8477/tcp          # open the port
 On each other host (Ubuntu or Windows) install just the **agent** with
 `server.url: http://<server-ip>:8477` and the **same API key** from
 `/opt/mrti/api-key`. They'll appear in the dashboard/API within seconds.
+
+### Public downloads over the Internet
+
+The Core serves the generated Windows, Linux and macOS installers at
+`/downloads/`. For Internet access, point a DNS name at this server and proxy
+that route through HTTPS (recommended), or forward/open TCP port 8477. The
+download page does not expose arbitrary files from the server.
+
+Rebuild and publish new agent packages with:
+
+```bash
+make package-downloads
+sudo ./scripts/install-server.sh
+```
 
 ## Quick foreground test (no install)
 

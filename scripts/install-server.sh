@@ -41,10 +41,15 @@ if [[ $need_build -eq 1 ]]; then
 fi
 
 echo "==> Installing to $INSTALL_DIR"
-install -d "$INSTALL_DIR" "$INSTALL_DIR/logs" "$INSTALL_DIR/cache" "$INSTALL_DIR/plugins"
+install -d "$INSTALL_DIR" "$INSTALL_DIR/logs" "$INSTALL_DIR/cache" "$INSTALL_DIR/plugins" "$INSTALL_DIR/downloads"
 install -m 0755 "$REPO_DIR/bin/mrti-core"  "$INSTALL_DIR/mrti-core"
 install -m 0755 "$REPO_DIR/bin/mrti-agent" "$INSTALL_DIR/mrti-agent"
 install -m 0755 "$REPO_DIR/plugins/ping"   "$INSTALL_DIR/plugins/ping"
+if compgen -G "$REPO_DIR/dist/downloads/*" >/dev/null; then
+  install -m 0644 "$REPO_DIR"/dist/downloads/* "$INSTALL_DIR/downloads/"
+else
+  echo "==> Warning: no installer packages found. Run 'make package-downloads' to populate the downloads page."
+fi
 
 # --- API key (generated once, shared by Core and agent) ----------------------
 KEY_FILE="$INSTALL_DIR/api-key"
@@ -100,7 +105,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=${INSTALL_DIR}/mrti-core -addr :${PORT} -db ${INSTALL_DIR}/core.db -api-key ${API_KEY}
+ExecStart=${INSTALL_DIR}/mrti-core -addr :${PORT} -db ${INSTALL_DIR}/core.db -api-key ${API_KEY} -downloads-dir ${INSTALL_DIR}/downloads
 WorkingDirectory=${INSTALL_DIR}
 Restart=always
 RestartSec=5
@@ -140,6 +145,7 @@ echo "==> Done."
 echo "    Dashboard : http://${IP}:${PORT}/"
 echo "    API       : http://${IP}:${PORT}/api/v1/agents"
 echo "    Metrics   : http://${IP}:${PORT}/metrics"
+echo "    Downloads : http://${IP}:${PORT}/downloads/"
 echo "    API key   : ${API_KEY}   (also in ${KEY_FILE})"
 echo
 echo "    Status : systemctl status mrti-core mrti-agent"

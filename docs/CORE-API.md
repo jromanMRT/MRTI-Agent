@@ -30,8 +30,10 @@ Then open the dashboard at <http://localhost:8477/>.
 
 | Method | Path | Returns |
 |--------|------|---------|
-| `GET`  | `/api/v1/agents` | list of agents with online status, version, self-usage, last sequence |
+| `GET`  | `/api/v1/agents` | list of agents with online/archive status, version, self-usage, last sequence |
 | `GET`  | `/api/v1/agents/{id}` | the agent's latest full envelope (all modules) |
+| `PATCH` | `/api/v1/agents/{id}` | archive/reactivate an agent with `{ "archived": true/false }` |
+| `DELETE` | `/api/v1/agents/{id}` | permanently delete a disconnected agent and its stored data |
 | `GET`  | `/api/v1/agents/{id}/modules/{module}` | one module's latest data (e.g. `docker`, `ups`, `inventory`) |
 | `GET`  | `/api/v1/alerts?limit=N` | recent alerts across the fleet |
 | `GET`  | `/api/v1/export` | full fleet dump as a downloadable JSON file |

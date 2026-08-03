@@ -2,7 +2,7 @@
 /bin/
 /dist/
 *.exe
-mrti-agent
+/mrti-agent
 plugins/ping
 plugins/*/*.bin
 

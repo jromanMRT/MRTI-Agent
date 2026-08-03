@@ -9,6 +9,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+DEMO_PORT="${MRTI_DEMO_PORT:-8477}"
+
 # Locate a Go toolchain (falls back to a home-dir install if not on PATH).
 if command -v go >/dev/null 2>&1; then
   GO=go
@@ -29,7 +31,7 @@ rm -f demo/cache/demo.db* demo/config.demo.local.yaml
 cp demo/config.demo.yaml demo/config.demo.local.yaml
 
 echo "==> Starting mock Core…"
-python3 demo/mock-core.py &
+MRTI_DEMO_PORT="$DEMO_PORT" python3 -u demo/mock-core.py &
 CORE_PID=$!
 cleanup() { kill "$CORE_PID" 2>/dev/null || true; rm -f demo/config.demo.local.yaml; }
 trap cleanup EXIT INT TERM
@@ -37,4 +39,5 @@ sleep 1
 
 echo "==> Starting agent (Ctrl-C to stop)…"
 echo
-./bin/mrti-agent -foreground -config demo/config.demo.local.yaml
+MRTI_SERVER_URL="http://127.0.0.1:$DEMO_PORT" \
+  ./bin/mrti-agent -foreground -config demo/config.demo.local.yaml

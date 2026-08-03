@@ -20,11 +20,11 @@ intervals:
 
 logging:
   level: "info"
-  dir: "demo/logs"
+  dir: "logs"
   console: false              # keep the console clean for the Core dashboard
 
 cache:
-  path: "demo/cache/demo.db"
+  path: "cache/demo.db"
   max_queue: 1000
 
 alerts:
@@ -65,6 +65,6 @@ modules:
     ups: { driver: nut, host: 127.0.0.1, port: 3493 }
 
 plugins:
-  dir: "plugins"
+  dir: "../plugins"
   enabled:
     - ping          # requires: go build -o plugins/ping ./plugins/example-ping

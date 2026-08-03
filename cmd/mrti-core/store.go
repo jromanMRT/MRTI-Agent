@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -32,6 +33,7 @@ type AgentRow struct {
 	SelfMemMB     float64         `json:"self_mem_mb"`
 	Sequence      uint64          `json:"sequence"`
 	Online        bool            `json:"online"`
+	Archived      bool            `json:"archived"`
 }
 
 // AlertRow is one stored alert event.
@@ -65,7 +67,7 @@ func openStore(path string) (*Store, error) {
 	CREATE TABLE IF NOT EXISTS agents (
 		id TEXT PRIMARY KEY, hostname TEXT, name TEXT, os TEXT, arch TEXT, version TEXT,
 		tags TEXT, first_seen INTEGER, last_seen INTEGER, last_heartbeat INTEGER,
-		self_cpu REAL, self_mem REAL, sequence INTEGER DEFAULT 0
+		self_cpu REAL, self_mem REAL, sequence INTEGER DEFAULT 0, archived INTEGER NOT NULL DEFAULT 0
 	);
 	CREATE TABLE IF NOT EXISTS latest (
 		agent_id TEXT PRIMARY KEY, sequence INTEGER, ts INTEGER, envelope BLOB
@@ -88,7 +90,37 @@ func openStore(path string) (*Store, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, err
 	}
+	if err := ensureColumn(db, "agents", "archived", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return nil, err
+	}
 	return &Store{db: db}, nil
+}
+
+func ensureColumn(db *sql.DB, table, column, definition string) error {
+	rows, err := db.Query(`PRAGMA table_info(` + table + `)`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var cid int
+		var name, dataType string
+		var notNull, primaryKey int
+		var defaultValue sql.NullString
+		if err := rows.Scan(&cid, &name, &dataType, &notNull, &defaultValue, &primaryKey); err != nil {
+			return err
+		}
+		if name == column {
+			rows.Close()
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+	_, err = db.Exec(`ALTER TABLE ` + table + ` ADD COLUMN ` + column + ` ` + definition)
+	return err
 }
 
 func (s *Store) Close() error { return s.db.Close() }
@@ -207,7 +239,7 @@ const onlineWindow = 120
 // ListAgents returns all agents with computed online status.
 func (s *Store) ListAgents() []AgentRow {
 	rows, err := s.db.Query(`SELECT id, hostname, name, os, arch, version, tags,
-		first_seen, last_seen, last_heartbeat, self_cpu, self_mem, sequence
+		first_seen, last_seen, last_heartbeat, self_cpu, self_mem, sequence, archived
 		FROM agents ORDER BY hostname`)
 	if err != nil {
 		return nil
@@ -219,7 +251,7 @@ func (s *Store) ListAgents() []AgentRow {
 		var a AgentRow
 		var tags sql.NullString
 		rows.Scan(&a.ID, &a.Hostname, &a.Name, &a.OS, &a.Arch, &a.Version, &tags,
-			&a.FirstSeen, &a.LastSeen, &a.LastHeartbeat, &a.SelfCPU, &a.SelfMemMB, &a.Sequence)
+			&a.FirstSeen, &a.LastSeen, &a.LastHeartbeat, &a.SelfCPU, &a.SelfMemMB, &a.Sequence, &a.Archived)
 		if tags.Valid && tags.String != "" && tags.String != "null" {
 			a.Tags = json.RawMessage(tags.String)
 		}
@@ -227,6 +259,53 @@ func (s *Store) ListAgents() []AgentRow {
 		out = append(out, a)
 	}
 	return out
+}
+
+// SetAgentArchived hides or restores an agent without changing its identity or telemetry.
+func (s *Store) SetAgentArchived(agentID string, archived bool) (bool, error) {
+	result, err := s.db.Exec(`UPDATE agents SET archived=? WHERE id=?`, archived, agentID)
+	if err != nil {
+		return false, err
+	}
+	count, err := result.RowsAffected()
+	return count > 0, err
+}
+
+var ErrAgentOnline = errors.New("online agents cannot be deleted")
+
+// DeleteAgent permanently removes one disconnected agent and all records keyed by its ID.
+func (s *Store) DeleteAgent(agentID string) (bool, error) {
+	var lastSeen int64
+	if err := s.db.QueryRow(`SELECT last_seen FROM agents WHERE id=?`, agentID).Scan(&lastSeen); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+	if time.Now().Unix()-lastSeen <= onlineWindow {
+		return false, ErrAgentOnline
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback()
+	for _, query := range []string{
+		`DELETE FROM latest WHERE agent_id=?`,
+		`DELETE FROM module_data WHERE agent_id=?`,
+		`DELETE FROM alerts WHERE agent_id=?`,
+		`DELETE FROM commands WHERE agent_id=?`,
+		`DELETE FROM agents WHERE id=?`,
+	} {
+		if _, err := tx.Exec(query, agentID); err != nil {
+			return false, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // GetEnvelope returns the latest full envelope JSON for an agent.

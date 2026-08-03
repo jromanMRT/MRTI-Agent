@@ -31,11 +31,17 @@ make run-core               # http://localhost:8477/  (dashboard, /api/v1/agents
 
 ```bash
 make package-windows        # -> dist/mrti-agent-windows-amd64.zip
+make package-downloads      # -> public Windows/Linux/macOS packages
 ```
 
 The zip contains `mrti-agent.exe`, `mrti-core.exe`, the ping plugin, a
-`config.yaml` and `install-windows.ps1` (registers the Windows service). See
+`config.yaml`, and installers that register Agent and Core as automatic Windows
+services. See
 [packaging/windows/README.txt](packaging/windows/README.txt).
+
+`make package-downloads` additionally builds Linux amd64/arm64 and macOS
+Intel/Apple Silicon packages under `dist/downloads/`. MRTI Core publishes that
+directory at `/downloads/` when started with `-downloads-dir`.
 
 ---
 
@@ -141,9 +147,20 @@ journalctl -u mrti-agent -f
 
 ```powershell
 make build-windows        # from a build host, or build on Windows
-.\scripts\install-windows.ps1 -Binary .\dist\windows-amd64\mrti-agent.exe
+.\scripts\install-windows.ps1 -Config .\config.yaml
 Get-Service mrti-agent
 ```
+
+The Windows package also installs Core as a background service, when needed:
+
+```powershell
+.\install-core-windows.ps1 -ApiKey "replace-with-a-secure-key"
+Get-Service mrti-core
+```
+
+Both services use automatic startup and restart-on-failure; closing PowerShell
+or signing out does not stop them. Running either `.exe` directly remains a
+foreground/testing mode and therefore ends with its console session.
 
 The agent can also manage its own service directly:
 

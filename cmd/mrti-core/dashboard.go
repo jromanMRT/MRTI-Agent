@@ -27,6 +27,12 @@ const dashboardHTML = `<!doctype html>
            align-items:center; gap:16px; position:sticky; top:0; background:var(--bg); z-index:5; }
   header h1 { font-size:18px; margin:0; } header .sub { color:var(--muted); }
   .pill { margin-left:auto; color:var(--muted); font-size:12px; }
+  .download-link { color:var(--fg); text-decoration:none; border:1px solid var(--border);
+                   border-radius:7px; padding:6px 10px; }
+  .download-link:hover { border-color:var(--accent); color:var(--accent); }
+  .core-link { color:var(--fg); text-decoration:none; border:1px solid var(--border);
+               border-radius:7px; padding:6px 10px; }
+  .core-link:hover { border-color:var(--accent); color:var(--accent); }
   main { padding:24px; display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
   .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; cursor:pointer; }
   .card:hover { border-color:var(--accent); }
@@ -56,6 +62,8 @@ const dashboardHTML = `<!doctype html>
 <header>
   <h1>MRTI Core</h1>
   <span class="sub">fleet dashboard</span>
+  <a class="core-link" id="portalLink" href="/">← Volver al portal</a>
+  <a class="download-link" href="/downloads/">Descargar agente</a>
   <span class="pill" id="pill">loading…</span>
 </header>
 <div class="alerts" id="alerts"></div>
@@ -71,18 +79,31 @@ const grid = document.getElementById('grid');
 const alertsEl = document.getElementById('alerts');
 const pill = document.getElementById('pill');
 const dlg = document.getElementById('dlg');
+const hashToken = new URLSearchParams(location.hash.slice(1)).get('token');
+if(hashToken){ sessionStorage.setItem('mrti_portal_token', hashToken); history.replaceState({}, '', '/'); }
+const portalToken = sessionStorage.getItem('mrti_portal_token');
+document.getElementById('portalLink').href = location.protocol+'//'+location.hostname+'/';
+if(!portalToken) location.replace(location.protocol+'//'+location.hostname+'/?returnTo='+encodeURIComponent('/agent-core/'));
 
 function pct(v){ v = Math.max(0, Math.min(100, +v||0)); return v; }
 function bar(v){ return '<div class="bar"><span style="width:'+pct(v)+'%"></span></div>'; }
 function ago(ts){ if(!ts) return 'never'; const s=Math.floor(Date.now()/1000-ts);
   if(s<60) return s+'s ago'; if(s<3600) return Math.floor(s/60)+'m ago'; return Math.floor(s/3600)+'h ago'; }
 
-async function jget(u){ const r = await fetch(u); if(!r.ok) throw new Error(r.status); return r.json(); }
+async function jget(u){
+  const r = await fetch(u, {headers:{Authorization:'Bearer '+portalToken}});
+  if(r.status===401) location.replace(location.protocol+'//'+location.hostname+'/?returnTo='+encodeURIComponent('/agent-core/'));
+  if(r.status===403) location.replace(location.protocol+'//'+location.hostname+'/?accessDenied=agent-core');
+  if(!r.ok) throw new Error(r.status);
+  return r.json();
+}
 
 async function render(){
   let agents=[], alerts=[];
   try { agents = await jget('/api/v1/agents') || []; alerts = await jget('/api/v1/alerts?limit=20') || []; }
   catch(e){ pill.textContent='Core unreachable'; return; }
+
+  agents = agents.filter(a=>!a.archived);
 
   const online = agents.filter(a=>a.online).length;
   pill.textContent = agents.length+' agents · '+online+' online · updated '+new Date().toLocaleTimeString();
