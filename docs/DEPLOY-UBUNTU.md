@@ -21,7 +21,7 @@ sudo ./scripts/install-server.sh
 This installs to `/opt/mrti`, generates a shared API key (`/opt/mrti/api-key`),
 writes `/opt/mrti/agent.yaml`, and enables + starts two services:
 
-- **mrti-core.service** — the server on `:8477` (dashboard, API, `/metrics`)
+- **mrti-monitor.service** — the server on `:8477` (dashboard, API, `/metrics`)
 - **mrti-agent.service** — the agent monitoring this host, reporting to the Core
 
 Then:
@@ -32,7 +32,7 @@ API       : http://<server-ip>:8477/api/v1/agents
 Metrics   : http://<server-ip>:8477/metrics
 Downloads : http://<server-ip>:8477/downloads/
 
-systemctl status mrti-core mrti-agent
+systemctl status mrti-monitor mrti-agent
 journalctl -u mrti-agent -f
 ```
 
@@ -67,14 +67,14 @@ sudo ./scripts/install-server.sh
 
 ```bash
 make build build-core build-plugins
-./bin/mrti-core -addr :8477 -db core.db -api-key demo-key &   # server
+./bin/mrti-monitor -addr :8477 -db core.db -api-key demo-key &   # server
 ./bin/mrti-agent -foreground -config run/agent.yaml           # agent (edit api_key to match)
 ```
 
 ## Uninstall
 
 ```bash
-sudo systemctl disable --now mrti-agent mrti-core
+sudo systemctl disable --now mrti-agent mrti-monitor
 sudo rm /etc/systemd/system/mrti-{agent,core}.service
 sudo systemctl daemon-reload
 sudo rm -rf /opt/mrti

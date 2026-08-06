@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mock MRTI Core for the local demo.
+"""Mock MRTI Monitor for the local demo.
 
 Receives the agent's telemetry (envelopes, heartbeats, command results) and
 prints a readable live report to the terminal. It also pushes two commands to

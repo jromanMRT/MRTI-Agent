@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install BOTH the MRTI Core server and the MRTI Agent as systemd services on
+# Install BOTH the MRTI Monitor server and the MRTI Agent as systemd services on
 # this Ubuntu/Debian host. The agent monitors this machine and reports to the
 # local Core; other machines can point their agents at http://THIS_HOST:8477.
 #
@@ -27,7 +27,7 @@ find_go() {
 }
 
 need_build=0
-[[ -x "$REPO_DIR/bin/mrti-core" ]]  || need_build=1
+[[ -x "$REPO_DIR/bin/mrti-monitor" ]]  || need_build=1
 [[ -x "$REPO_DIR/bin/mrti-agent" ]] || need_build=1
 [[ -x "$REPO_DIR/plugins/ping" ]]   || need_build=1
 
@@ -35,14 +35,14 @@ if [[ $need_build -eq 1 ]]; then
   GO="$(find_go)"
   [[ -n "$GO" ]] || { echo "Go not found and binaries missing. Run 'make build build-core build-plugins' first." >&2; exit 1; }
   echo "==> Building binaries with $GO"
-  ( cd "$REPO_DIR" && "$GO" build -trimpath -ldflags "-s -w" -o bin/mrti-core ./cmd/mrti-core \
+  ( cd "$REPO_DIR" && "$GO" build -trimpath -ldflags "-s -w" -o bin/mrti-monitor ./cmd/mrti-monitor \
       && "$GO" build -trimpath -ldflags "-s -w" -o bin/mrti-agent ./cmd/mrti-agent \
       && "$GO" build -trimpath -o plugins/ping ./plugins/example-ping )
 fi
 
 echo "==> Installing to $INSTALL_DIR"
 install -d "$INSTALL_DIR" "$INSTALL_DIR/logs" "$INSTALL_DIR/cache" "$INSTALL_DIR/plugins" "$INSTALL_DIR/downloads"
-install -m 0755 "$REPO_DIR/bin/mrti-core"  "$INSTALL_DIR/mrti-core"
+install -m 0755 "$REPO_DIR/bin/mrti-monitor"  "$INSTALL_DIR/mrti-monitor"
 install -m 0755 "$REPO_DIR/bin/mrti-agent" "$INSTALL_DIR/mrti-agent"
 install -m 0755 "$REPO_DIR/plugins/ping"   "$INSTALL_DIR/plugins/ping"
 if compgen -G "$REPO_DIR/dist/downloads/*" >/dev/null; then
@@ -97,15 +97,15 @@ EOF
 fi
 
 # --- systemd units -----------------------------------------------------------
-cat > /etc/systemd/system/mrti-core.service <<EOF
+cat > /etc/systemd/system/mrti-monitor.service <<EOF
 [Unit]
-Description=MRTI Core - fleet telemetry server + API + dashboard
+Description=MRTI Monitor - fleet telemetry server + API + dashboard
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=${INSTALL_DIR}/mrti-core -addr :${PORT} -db ${INSTALL_DIR}/core.db -api-key ${API_KEY} -downloads-dir ${INSTALL_DIR}/downloads
+ExecStart=${INSTALL_DIR}/mrti-monitor -addr :${PORT} -db ${INSTALL_DIR}/core.db -api-key ${API_KEY} -downloads-dir ${INSTALL_DIR}/downloads
 WorkingDirectory=${INSTALL_DIR}
 Restart=always
 RestartSec=5
@@ -118,7 +118,7 @@ EOF
 cat > /etc/systemd/system/mrti-agent.service <<EOF
 [Unit]
 Description=MRTI Agent - infrastructure monitoring agent
-After=network-online.target mrti-core.service
+After=network-online.target mrti-monitor.service
 Wants=network-online.target
 
 [Service]
@@ -135,7 +135,7 @@ EOF
 
 echo "==> Enabling and starting services"
 systemctl daemon-reload
-systemctl enable --now mrti-core.service
+systemctl enable --now mrti-monitor.service
 sleep 1
 systemctl enable --now mrti-agent.service
 
@@ -148,8 +148,8 @@ echo "    Metrics   : http://${IP}:${PORT}/metrics"
 echo "    Downloads : http://${IP}:${PORT}/downloads/"
 echo "    API key   : ${API_KEY}   (also in ${KEY_FILE})"
 echo
-echo "    Status : systemctl status mrti-core mrti-agent"
-echo "    Logs   : journalctl -u mrti-core -f   /   journalctl -u mrti-agent -f"
+echo "    Status : systemctl status mrti-monitor mrti-agent"
+echo "    Logs   : journalctl -u mrti-monitor -f   /   journalctl -u mrti-agent -f"
 echo
 echo "    To let OTHER machines report here, open the port:"
 echo "        sudo ufw allow ${PORT}/tcp"

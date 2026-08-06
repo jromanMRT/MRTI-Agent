@@ -1,7 +1,7 @@
 [Unit]
 Description=MRTI Agent - infrastructure monitoring agent
 Documentation=https://github.com/jromanMRT/mrti-agent
-After=network-online.target mrti-core.service
+After=network-online.target mrti-monitor.service
 Wants=network-online.target
 
 [Service]

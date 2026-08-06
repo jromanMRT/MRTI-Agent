@@ -140,6 +140,6 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
   </section>
 {{end}}
 </main>
-<footer>Configura la URL y la clave de tu MRTI Core antes de ejecutar el instalador.</footer>
+<footer>Configura la URL y la clave de tu MRTI Monitor antes de ejecutar el instalador.</footer>
 </body>
 </html>`))

@@ -1,5 +1,5 @@
 // Package model defines the data structures exchanged between the MRTI Agent
-// and the MRTI Core server. Everything sent over the wire lives here so that
+// and the MRTI Monitor server. Everything sent over the wire lives here so that
 // modules, transport and cache all agree on a single schema.
 package model
 

@@ -1,0 +1,21 @@
+[Unit]
+# Plantilla de referencia — no un secreto real. Genera la unidad real con
+# tu propia API key (ver scripts/install-server.sh, que hace esto por ti).
+Description=MRTI Monitor - monitoring server (API + dashboard)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mrtcorporativo
+Group=mrtcorporativo
+WorkingDirectory=/var/www/mrt/MRTI
+ExecStart=/var/www/mrt/MRTI/bin/mrti-monitor -addr :8477 -db /var/www/mrt/MRTI/run/core.db -api-key REPLACE_WITH_API_KEY
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

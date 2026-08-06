@@ -69,7 +69,7 @@ type AgentConfig struct {
 }
 
 type ServerConfig struct {
-	URL       string    `yaml:"url"`       // base URL of MRTI Core, e.g. https://mrti.local
+	URL       string    `yaml:"url"`       // base URL of MRTI Monitor, e.g. https://mrti.local
 	Transport string    `yaml:"transport"` // https | websocket | mqtt
 	APIKey    string    `yaml:"api_key"`
 	Token     string    `yaml:"token"`

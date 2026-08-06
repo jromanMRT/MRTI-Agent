@@ -55,8 +55,8 @@ func main() {
 	program := &coreProgram{opts: opts}
 
 	config := &service.Config{
-		Name:        "mrti-core",
-		DisplayName: "MRTI Core",
+		Name:        "mrti-monitor",
+		DisplayName: "MRTI Monitor",
 		Description: "MRTI monitoring server, API and dashboard",
 		Arguments: []string{
 			"-addr", opts.addr,
@@ -84,7 +84,7 @@ func main() {
 		return
 	}
 
-	logFile, err := openCoreLog(filepath.Join(filepath.Dir(opts.dbPath), "mrti-core.log"), *foreground)
+	logFile, err := openCoreLog(filepath.Join(filepath.Dir(opts.dbPath), "mrti-monitor.log"), *foreground)
 	if err != nil {
 		fatalf("open log: %v", err)
 	}
@@ -148,13 +148,13 @@ func (p *coreProgram) Start(_ service.Service) error {
 	}
 	p.done = make(chan struct{})
 
-	log.Printf("MRTI Core listening on %s (db=%s)", p.opts.addr, p.opts.dbPath)
+	log.Printf("MRTI Monitor listening on %s (db=%s)", p.opts.addr, p.opts.dbPath)
 	log.Printf("dashboard: http://localhost%s/", portOnly(p.opts.addr))
 	log.Printf("downloads: http://localhost%s/downloads/ (dir=%s)", portOnly(p.opts.addr), p.opts.downloadsDir)
 	go func() {
 		defer close(p.done)
 		if err := p.http.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("MRTI Core stopped unexpectedly: %v", err)
+			log.Printf("MRTI Monitor stopped unexpectedly: %v", err)
 			// Ending the process lets the Windows Service Control Manager apply
 			// the configured restart-on-failure policy.
 			os.Exit(1)
@@ -187,6 +187,6 @@ func (p *coreProgram) Stop(_ service.Service) error {
 			err = closeErr
 		}
 	}
-	log.Printf("MRTI Core stopped")
+	log.Printf("MRTI Monitor stopped")
 	return err
 }

@@ -1,4 +1,4 @@
-// Package scripts executes remote scripts pushed by the MRTI Core (from
+// Package scripts executes remote scripts pushed by the MRTI Monitor (from
 // MRTOps): it stages the script content to a temp file, runs it under the
 // requested interpreter with a hard timeout, and captures stdout/stderr/exit
 // code. Execution is gated by config (disabled by default) and restricted to

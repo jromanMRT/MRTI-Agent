@@ -1,4 +1,4 @@
-// Command mrti-core is a reference MRTI Core server. It receives telemetry from
+// Command mrti-monitor is a reference MRTI Monitor server. It receives telemetry from
 // MRTI agents, stores the latest state per agent in SQLite, and exposes it as a
 // JSON REST API, a Prometheus /metrics endpoint and a live HTML dashboard. It
 // also queues commands for agents to pick up. This is a self-hostable starting

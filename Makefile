@@ -16,7 +16,7 @@ build:
 
 ## Build the reference Core server for the host platform
 build-core:
-	go build -trimpath -ldflags "-s -w" -o bin/mrti-core ./cmd/mrti-core
+	go build -trimpath -ldflags "-s -w" -o bin/mrti-monitor ./cmd/mrti-monitor
 
 ## Cross-compile the agent for Linux amd64
 build-linux:
@@ -25,14 +25,14 @@ build-linux:
 ## Cross-compile agent + core + plugin for Windows amd64
 build-windows:
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o dist/windows-amd64/$(BIN).exe ./cmd/mrti-agent
-	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o dist/windows-amd64/mrti-core.exe ./cmd/mrti-core
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o dist/windows-amd64/mrti-monitor.exe ./cmd/mrti-monitor
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -o dist/windows-amd64/plugins/ping.exe ./plugins/example-ping
 
 ## Assemble a ready-to-install Windows zip (agent + core + plugin + config + installer)
 package-windows: build-windows
 	rm -rf dist/mrti-agent-windows-amd64 dist/mrti-agent-windows-amd64.zip
 	mkdir -p dist/mrti-agent-windows-amd64/plugins
-	cp dist/windows-amd64/mrti-agent.exe dist/windows-amd64/mrti-core.exe dist/mrti-agent-windows-amd64/
+	cp dist/windows-amd64/mrti-agent.exe dist/windows-amd64/mrti-monitor.exe dist/mrti-agent-windows-amd64/
 	cp dist/windows-amd64/plugins/ping.exe dist/mrti-agent-windows-amd64/plugins/
 	cp config.yaml.example dist/mrti-agent-windows-amd64/config.yaml
 	cp packaging/windows/install-windows.ps1 dist/mrti-agent-windows-amd64/install-windows.ps1
@@ -80,7 +80,7 @@ run: build
 
 ## Run the Core server (dashboard + API + metrics)
 run-core: build-core
-	./bin/mrti-core -addr :8477 -db core.db -downloads-dir dist/downloads
+	./bin/mrti-monitor -addr :8477 -db core.db -downloads-dir dist/downloads
 
 vet:
 	go vet ./...

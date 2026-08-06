@@ -2,7 +2,7 @@
 
 A professional, modular, lightweight infrastructure-monitoring agent for
 **Windows** and **Ubuntu/Linux**, designed to report continuously to the
-**MRTI Core** and to grow into a full fleet-management platform (à la Datadog /
+**MRTI Monitor** and to grow into a full fleet-management platform (à la Datadog /
 Zabbix / Wazuh) — but fully owned by you.
 
 > Status: **working end-to-end.** 16 collectors, gRPC plugins, three transports
@@ -14,7 +14,7 @@ Zabbix / Wazuh) — but fully owned by you.
 
 - **`mrti-agent`** — the monitoring agent that runs on each host (this is most of
   the repo).
-- **`mrti-core`** ([`cmd/mrti-core`](cmd/mrti-core)) — a self-hostable reference
+- **`mrti-monitor`** ([`cmd/mrti-monitor`](cmd/mrti-monitor)) — a self-hostable reference
   **Core server**: it ingests agent telemetry and exposes it as a JSON REST API,
   a Prometheus `/metrics` endpoint and a live HTML dashboard, and queues commands
   for agents. See **[docs/CORE-API.md](docs/CORE-API.md)**.
@@ -34,13 +34,13 @@ make package-windows        # -> dist/mrti-agent-windows-amd64.zip
 make package-downloads      # -> public Windows/Linux/macOS packages
 ```
 
-The zip contains `mrti-agent.exe`, `mrti-core.exe`, the ping plugin, a
+The zip contains `mrti-agent.exe`, `mrti-monitor.exe`, the ping plugin, a
 `config.yaml`, and installers that register Agent and Core as automatic Windows
 services. See
 [packaging/windows/README.txt](packaging/windows/README.txt).
 
 `make package-downloads` additionally builds Linux amd64/arm64 and macOS
-Intel/Apple Silicon packages under `dist/downloads/`. MRTI Core publishes that
+Intel/Apple Silicon packages under `dist/downloads/`. MRTI Monitor publishes that
 directory at `/downloads/` when started with `-downloads-dir`.
 
 ---
@@ -71,7 +71,7 @@ directory at `/downloads/` when started with `-downloads-dir`.
                          │                MRTI Agent                │
                          │                                          │
   native modules ──────► │  registry ─┐                            │
-  (system,cpu,ram,       │            ├─► orchestrator ─► cache ───┼──► transport ──► MRTI Core
+  (system,cpu,ram,       │            ├─► orchestrator ─► cache ───┼──► transport ──► MRTI Monitor
    disk,network,…)       │  plugins ──┘   (collect loop)  (SQLite   │   (HTTPS │ WS │ MQTT)
                          │   ▲                            outbox)    │        + TLS + gzip
   gRPC plugin procs ─────┘   │                                      │        + API key/JWT
@@ -155,7 +155,7 @@ The Windows package also installs Core as a background service, when needed:
 
 ```powershell
 .\install-core-windows.ps1 -ApiKey "replace-with-a-secure-key"
-Get-Service mrti-core
+Get-Service mrti-monitor
 ```
 
 Both services use automatic startup and restart-on-failure; closing PowerShell
@@ -281,7 +281,7 @@ for a working reference.
 
 ---
 
-## Wire protocol (to MRTI Core)
+## Wire protocol (to MRTI Monitor)
 
 The HTTPS back-end posts to:
 

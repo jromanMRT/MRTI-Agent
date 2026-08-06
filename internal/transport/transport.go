@@ -1,4 +1,4 @@
-// Package transport abstracts how the agent talks to the MRTI Core. The
+// Package transport abstracts how the agent talks to the MRTI Monitor. The
 // orchestrator depends only on the Transport interface, so HTTPS, WebSocket
 // and MQTT back-ends are interchangeable and selectable from config. HTTPS is
 // fully implemented; WebSocket and MQTT are scaffolded for later.

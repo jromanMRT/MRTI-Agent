@@ -1,6 +1,6 @@
-# MRTI Core — reference server & API
+# MRTI Monitor — reference server & API
 
-`cmd/mrti-core` is a self-hostable reference server that receives telemetry from
+`cmd/mrti-monitor` is a self-hostable reference server that receives telemetry from
 MRTI agents, stores the latest state per agent in SQLite, and exposes it as a
 JSON REST API, a Prometheus `/metrics` endpoint and a live HTML dashboard. Point
 an agent's `server.url` at it and the agent appears in the API within seconds.
@@ -9,7 +9,7 @@ an agent's `server.url` at it and the agent appears in the API within seconds.
 
 ```bash
 make build-core
-./bin/mrti-core -addr :8477 -db core.db -api-key demo-api-key
+./bin/mrti-monitor -addr :8477 -db core.db -api-key demo-api-key
 ```
 
 Flags: `-addr` (listen address), `-db` (SQLite path), `-api-key` (the key agents

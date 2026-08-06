@@ -1,6 +1,6 @@
 // Command mrti-agent is the MRTI monitoring agent. It runs as a background
 // service on Windows and Linux, collecting host telemetry through pluggable
-// modules and shipping it to the MRTI Core. The same binary installs,
+// modules and shipping it to the MRTI Monitor. The same binary installs,
 // uninstalls and controls its own service via flags.
 package main
 

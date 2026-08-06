@@ -1,4 +1,4 @@
-// Package auth centralises how the agent proves its identity to the MRTI Core.
+// Package auth centralises how the agent proves its identity to the MRTI Monitor.
 // It supports three credential styles that can be combined: a long-lived API
 // key, a bearer token, and a JWT. Keeping this in one place means the
 // transport layer never hand-rolls auth headers.

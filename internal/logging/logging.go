@@ -2,7 +2,7 @@
 // logs to a rotating file under the configured log directory and optionally
 // mirrors them to stdout when running in the foreground. Using the standard
 // library's log/slog keeps the dependency surface small and the output
-// machine-parseable for the MRTI Core to ingest later.
+// machine-parseable for the MRTI Monitor to ingest later.
 package logging
 
 import (
