@@ -10,6 +10,10 @@ Type=simple
 User=mrtcorporativo
 Group=mrtcorporativo
 WorkingDirectory=/var/www/mrt/MRTI
+# Fase 4 de CORE_INFRA_MIGRATION_GUIDE.md: valida sesiones de operador contra
+# MRTI Core (identidad, puerto 3005) en vez de MRTI-Infra (puerto 3002). Sin
+# esta línea, requirePortalAccess() cae al valor fijo en código (Infra).
+Environment=MRTI_AUTH_MODULE_URL=http://127.0.0.1:3005/api/auth/module-access/agent-core
 ExecStart=/var/www/mrt/MRTI/bin/mrti-monitor -addr :8477 -db /var/www/mrt/MRTI/run/core.db -api-key REPLACE_WITH_API_KEY
 Restart=always
 RestartSec=5
