@@ -34,6 +34,12 @@ const dashboardHTML = `<!doctype html>
   .core-link { color:var(--fg); text-decoration:none; border:1px solid var(--border);
                border-radius:7px; padding:6px 10px; }
   .core-link:hover { border-color:var(--accent); color:var(--accent); }
+  .app-switcher { position:relative; }
+  .app-switcher summary { list-style:none; cursor:pointer; color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:6px 10px; }
+  .app-switcher summary::-webkit-details-marker { display:none; }
+  .app-menu { position:absolute; z-index:20; top:42px; right:0; display:grid; width:230px; padding:8px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:0 20px 45px rgba(0,0,0,.4); }
+  .app-menu a { padding:8px 10px; border-radius:7px; color:var(--fg); text-decoration:none; }
+  .app-menu a:hover { color:var(--accent); background:#21262d; }
   main { padding:24px; display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
   .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; cursor:pointer; }
   .card:hover { border-color:var(--accent); }
@@ -63,6 +69,7 @@ const dashboardHTML = `<!doctype html>
 <header>
   <h1>MRTI Monitor</h1>
   <span class="sub">fleet dashboard</span>
+  <details class="app-switcher"><summary>Módulos ▾</summary><div class="app-menu" id="appMenu"><a href="/">Mi espacio</a></div></details>
   <a class="core-link" id="portalLink" href="/">← Volver al portal</a>
   <a class="download-link" href="/downloads/">Descargar agente</a>
   <span class="pill" id="pill">loading…</span>
@@ -83,8 +90,16 @@ const dlg = document.getElementById('dlg');
 const hashToken = new URLSearchParams(location.hash.slice(1)).get('token');
 if(hashToken){ sessionStorage.setItem('mrti_portal_token', hashToken); history.replaceState({}, '', '/'); }
 const portalToken = sessionStorage.getItem('mrti_portal_token');
-document.getElementById('portalLink').href = location.protocol+'//'+location.hostname+'/';
+const portalOrigin = location.protocol+'//'+location.hostname;
+document.getElementById('portalLink').href = portalOrigin+'/';
 if(!portalToken) location.replace(location.protocol+'//'+location.hostname+'/?returnTo='+encodeURIComponent('/agent-core/'));
+
+fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer '+portalToken}})
+  .then(r=>r.ok?r.json():Promise.reject())
+  .then(({data})=>{
+    const apps=(Array.isArray(data)?data:[]).filter(a=>a.code!=='agent-core');
+    document.getElementById('appMenu').innerHTML='<a href="'+portalOrigin+'/">Mi espacio</a>'+apps.map(a=>'<a href="'+portalOrigin+esc(a.url)+'">'+esc(a.name)+'</a>').join('');
+  }).catch(()=>{});
 
 function pct(v){ v = Math.max(0, Math.min(100, +v||0)); return v; }
 function bar(v){ return '<div class="bar"><span style="width:'+pct(v)+'%"></span></div>'; }
