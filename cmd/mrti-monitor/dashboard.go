@@ -12,34 +12,54 @@ func (s *server) dashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 const dashboardHTML = `<!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSI4IiB5MT0iOCIgeDI9IjU2IiB5Mj0iNTYiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agc3RvcC1jb2xvcj0iIzU1YmRmNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM1MGQ0YmQiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE2IiBmaWxsPSIjMGIxYTI5Ii8+CiAgPHBhdGggZD0iTTEzIDIwIDMyIDEwbDE5IDEwdjI1TDMyIDU1IDEzIDQ1VjIwWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2cpIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJtMjMgMjUgOS01IDkgNXYxNWwtOSA1LTktNVYyNVoiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnKSIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" />
-<title>MRTI Monitor</title>
+<title>MRTI Agent Core</title>
 <style>
-  :root { --bg:#0d1117; --card:#161b22; --border:#30363d; --fg:#e6edf3; --muted:#8b949e;
-          --green:#3fb950; --red:#f85149; --amber:#d29922; --accent:#58a6ff; }
+  :root { --bg:#f6f2e7; --card:#fff; --soft:#f1ead9; --border:#e1d3ab; --fg:#221b12; --muted:#6c5f47;
+          --faint:#9c8f78; --green:#2f7d43; --red:#a1432f; --amber:#92600e; --accent:#a9781f; --accent-deep:#6e4d16; }
+  :root[data-theme="dark"] { --bg:#17120c; --card:#251e13; --soft:#2f2517; --border:#4a3a22; --fg:#f5ecd9;
+          --muted:#d7cab1; --faint:#a8956f; --green:#6fcf8c; --red:#e08a72; --amber:#f3bf5e; --accent:#d9a63c; --accent-deep:#caa054; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--fg);
-         font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
-  header { padding:16px 24px; border-bottom:1px solid var(--border); display:flex;
-           align-items:center; gap:16px; position:sticky; top:0; background:var(--bg); z-index:5; }
-  header h1 { font-size:18px; margin:0; } header .sub { color:var(--muted); }
-  .pill { margin-left:auto; color:var(--muted); font-size:12px; }
-  .download-link { color:var(--fg); text-decoration:none; border:1px solid var(--border);
-                   border-radius:7px; padding:6px 10px; }
-  .download-link:hover { border-color:var(--accent); color:var(--accent); }
-  .core-link { color:var(--fg); text-decoration:none; border:1px solid var(--border);
-               border-radius:7px; padding:6px 10px; }
-  .core-link:hover { border-color:var(--accent); color:var(--accent); }
-  .app-switcher { position:relative; }
-  .app-switcher summary { list-style:none; cursor:pointer; color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:6px 10px; }
-  .app-switcher summary::-webkit-details-marker { display:none; }
-  .app-menu { position:absolute; z-index:20; top:42px; right:0; display:grid; width:230px; padding:8px; border:1px solid var(--border); border-radius:10px; background:var(--card); box-shadow:0 20px 45px rgba(0,0,0,.4); }
-  .app-menu a { padding:8px 10px; border-radius:7px; color:var(--fg); text-decoration:none; }
-  .app-menu a:hover { color:var(--accent); background:#21262d; }
+         font:14px/1.5 "IBM Plex Sans",-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  button,a { font:inherit; }
+  .app-shell { display:grid; grid-template-columns:256px minmax(0,1fr); min-height:100vh; transition:grid-template-columns 200ms ease; }
+  .app-shell.collapsed { grid-template-columns:64px minmax(0,1fr); }
+  .sidebar { position:sticky; z-index:40; top:0; display:flex; height:100vh; padding:18px 14px; flex-direction:column;
+             overflow:hidden; border-right:1px solid var(--border); background:linear-gradient(180deg,rgba(217,166,60,.055),transparent 13rem),var(--card); }
+  .collapsed .sidebar { padding-inline:10px; }
+  .sidebar-brand { min-height:61px; padding:0 4px 18px; border-bottom:1px solid var(--border); }
+  .brand-link { display:flex; align-items:center; gap:12px; color:var(--fg); text-decoration:none; }
+  .brand-mark { display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border:1px solid color-mix(in srgb,var(--accent) 30%,transparent); border-radius:12px; background:color-mix(in srgb,var(--accent) 10%,var(--card)); }
+  .brand-mark img { width:34px; height:34px; }
+  .brand-copy { display:grid; min-width:0; }
+  .brand-copy strong { font-size:16px; }
+  .brand-copy small { color:var(--accent-deep); font-size:11px; }
+  .collapsed .brand-copy,.collapsed .nav-label,.collapsed .section-label { display:none; }
+  .collapsed .brand-link,.collapsed .sidebar-nav a,.collapsed .sidebar-section a { justify-content:center; }
+  .sidebar-nav { display:grid; gap:4px; padding-top:14px; }
+  .sidebar-nav a,.sidebar-section a { display:flex; min-height:42px; align-items:center; gap:11px; padding:9px 11px; border-radius:11px; color:var(--muted); text-decoration:none; }
+  .sidebar-nav a:hover,.sidebar-section a:hover { color:var(--fg); background:var(--soft); }
+  .sidebar-nav a.active { color:var(--fg); background:color-mix(in srgb,var(--accent) 16%,transparent); box-shadow:inset 2px 0 var(--accent); }
+  .nav-icon { display:grid; width:20px; flex:0 0 20px; place-items:center; color:var(--accent-deep); }
+  .sidebar-scroll { min-height:0; flex:1; overflow-y:auto; scrollbar-width:thin; }
+  .sidebar-section { display:grid; gap:4px; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+  .section-label { padding:0 10px 7px; color:var(--faint); font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+  .sidebar-footer { display:flex; align-items:center; justify-content:space-between; gap:7px; padding-top:14px; border-top:1px solid var(--border); }
+  .collapsed .sidebar-footer { flex-direction:column; }
+  .sidebar-action { display:grid; width:36px; height:36px; flex:0 0 36px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--accent-deep); background:var(--card); cursor:pointer; }
+  .sidebar-action:hover { border-color:var(--accent); color:var(--accent); background:var(--soft); }
+  .sidebar-action.logout:hover { color:var(--red); }
+  .workspace { min-width:0; }
+  .topbar { position:sticky; z-index:20; top:0; display:flex; min-height:72px; align-items:center; gap:16px; padding:0 24px; border-bottom:1px solid var(--border); background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(12px); }
+  .topbar-context { display:grid; }
+  .topbar-context small,.pill { color:var(--faint); font-size:12px; }
+  .pill { margin-left:auto; }
+  .mobile-menu,.sidebar-backdrop { display:none; }
   main { padding:24px; display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
   .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; cursor:pointer; }
   .card:hover { border-color:var(--accent); }
@@ -54,28 +74,48 @@ const dashboardHTML = `<!doctype html>
   .alert { background:var(--card); border-left:3px solid var(--amber); border-radius:6px;
            padding:8px 12px; margin-bottom:6px; font-size:13px; }
   .alert.critical { border-left-color:var(--red); }
-  .bar { height:6px; background:#21262d; border-radius:4px; overflow:hidden; margin-top:2px; }
+  .bar { height:6px; background:var(--soft); border-radius:4px; overflow:hidden; margin-top:2px; }
   .bar > span { display:block; height:100%; background:var(--accent); }
   .empty { color:var(--muted); padding:40px; text-align:center; grid-column:1/-1; }
   dialog { background:var(--card); color:var(--fg); border:1px solid var(--border);
            border-radius:10px; width:min(900px,92vw); max-height:85vh; padding:0; }
-  dialog header { position:static; border:0; }
+  dialog header { position:static; display:flex; align-items:center; padding:16px 24px; border:0; }
   dialog pre { margin:0; padding:16px 24px; overflow:auto; max-height:70vh; font-size:12px; }
   dialog .x { margin-left:auto; cursor:pointer; color:var(--muted); background:none; border:0; font-size:18px; }
   a { color:var(--accent); }
+  @media(max-width:820px){
+    .app-shell,.app-shell.collapsed { display:block; }
+    .sidebar,.collapsed .sidebar { position:fixed; width:min(280px,calc(100vw - 42px)); padding:18px 14px; transform:translateX(-105%); transition:transform 200ms ease; }
+    .mobile-open .sidebar { transform:translateX(0); box-shadow:0 24px 70px rgba(0,0,0,.32); }
+    .collapsed .brand-copy,.collapsed .nav-label,.collapsed .section-label { display:initial; }
+    .collapsed .brand-link,.collapsed .sidebar-nav a,.collapsed .sidebar-section a { justify-content:flex-start; }
+    .collapsed .sidebar-footer { flex-direction:row; }
+    .collapse-action { display:none; }
+    .mobile-menu { display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:10px; color:var(--accent-deep); background:var(--card); }
+    .sidebar-backdrop { position:fixed; z-index:35; inset:0; border:0; background:rgba(0,0,0,.54); }
+    .mobile-open .sidebar-backdrop { display:block; }
+    main { padding:18px; grid-template-columns:1fr; }
+    .alerts { margin-inline:18px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>MRTI Monitor</h1>
-  <span class="sub">fleet dashboard</span>
-  <details class="app-switcher"><summary>Módulos ▾</summary><div class="app-menu" id="appMenu"><a href="/">Mi espacio</a></div></details>
-  <a class="core-link" id="portalLink" href="/">← Volver al portal</a>
-  <a class="download-link" href="/downloads/">Descargar agente</a>
-  <span class="pill" id="pill">loading…</span>
-</header>
+<div class="app-shell" id="appShell">
+<button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Cerrar navegación"></button>
+<aside class="sidebar" aria-label="Navegación de Agent Core">
+  <div class="sidebar-brand"><a class="brand-link" id="brandLink" href="/"><span class="brand-mark"><img id="brandLogo" src="/company-logo.svg" alt=""></span><span class="brand-copy"><strong>MRTI Agent Core</strong><small>Volver a Mi espacio</small></span></a></div>
+  <div class="sidebar-scroll">
+    <nav class="sidebar-nav"><a class="active" href="/"><span class="nav-icon">⌂</span><span class="nav-label">Agentes</span></a><a href="/downloads/"><span class="nav-icon">↓</span><span class="nav-label">Descargar agente</span></a></nav>
+    <div class="sidebar-section"><span class="section-label">Cambiar módulo</span><div id="appMenu"><a href="/"><span class="nav-icon">⌂</span><span class="nav-label">Mi espacio</span></a></div></div>
+    <div class="sidebar-section" id="accountMenu"><span class="section-label">Mi cuenta</span><a href="/" data-portal-view="account"><span class="nav-icon">○</span><span class="nav-label">Perfil</span></a><a href="/" data-portal-view="notifications"><span class="nav-icon">◔</span><span class="nav-label">Notificaciones</span></a></div>
+  </div>
+  <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button><button class="sidebar-action logout" id="logoutAction" type="button" title="Cerrar sesión">↪</button></div>
+</aside>
+<div class="workspace">
+<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><span class="pill" id="pill">Cargando…</span></header>
 <div class="alerts" id="alerts"></div>
-<main id="grid"><div class="empty">Waiting for agents…</div></main>
+<main id="grid"><div class="empty">Esperando agentes…</div></main>
+</div></div>
 
 <dialog id="dlg">
   <header><strong id="dlgTitle"></strong><button class="x" onclick="dlg.close()">✕</button></header>
@@ -91,15 +131,54 @@ const hashToken = new URLSearchParams(location.hash.slice(1)).get('token');
 if(hashToken){ sessionStorage.setItem('mrti_portal_token', hashToken); history.replaceState({}, '', '/'); }
 const portalToken = sessionStorage.getItem('mrti_portal_token');
 const portalOrigin = location.protocol+'//'+location.hostname;
-document.getElementById('portalLink').href = portalOrigin+'/';
+document.getElementById('brandLink').href = portalOrigin+'/';
+document.querySelector('#appMenu a').href = portalOrigin+'/';
+document.querySelectorAll('[data-portal-view]').forEach(a=>a.href=portalOrigin+'/?view='+a.dataset.portalView);
 if(!portalToken) location.replace(location.protocol+'//'+location.hostname+'/?returnTo='+encodeURIComponent('/agent-core/'));
+
+const appShell = document.getElementById('appShell');
+const storedTheme = localStorage.getItem('mrti_theme');
+if(storedTheme==='dark'||storedTheme==='light') document.documentElement.dataset.theme=storedTheme;
+else if(matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme='dark';
+if(localStorage.getItem('mrti_agent_sidebar_collapsed')==='1') appShell.classList.add('collapsed');
+document.getElementById('collapseAction').addEventListener('click',()=>{
+  const collapsed=appShell.classList.toggle('collapsed');
+  localStorage.setItem('mrti_agent_sidebar_collapsed',collapsed?'1':'0');
+  document.getElementById('collapseAction').textContent=collapsed?'»':'«';
+});
+document.getElementById('themeAction').addEventListener('click',()=>{
+  const next=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  document.documentElement.dataset.theme=next; localStorage.setItem('mrti_theme',next);
+});
+const closeMobile=()=>{appShell.classList.remove('mobile-open');document.body.style.overflow='';};
+document.getElementById('mobileMenu').addEventListener('click',()=>{appShell.classList.add('mobile-open');document.body.style.overflow='hidden';});
+document.getElementById('sidebarBackdrop').addEventListener('click',closeMobile);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobile();});
+document.querySelector('.sidebar').addEventListener('click',e=>{if(e.target.closest('a'))closeMobile();});
+document.getElementById('logoutAction').addEventListener('click',async()=>{
+  try{await fetch(portalOrigin+'/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+portalToken},body:'{}'});}catch(e){}
+  sessionStorage.removeItem('mrti_portal_token'); localStorage.removeItem('auth_token'); localStorage.removeItem('auth_profile'); location.replace(portalOrigin+'/');
+});
+
+// El logo lo administra Core (Centro de control → Recursos de marca); se
+// consulta en vivo (endpoint público, sin token) para que un cambio ahí se
+// refleje aquí sin tocar código.
+fetch(portalOrigin+'/api/portal/v1/brand-appearance',{cache:'no-store'})
+  .then(r=>r.ok?r.json():Promise.reject())
+  .then(({data})=>{ if(data?.portal_logo?.content_url) document.getElementById('brandLogo').src = portalOrigin+data.portal_logo.content_url; })
+  .catch(()=>{});
 
 fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer '+portalToken}})
   .then(r=>r.ok?r.json():Promise.reject())
   .then(({data})=>{
     const apps=(Array.isArray(data)?data:[]).filter(a=>a.code!=='agent-core');
-    document.getElementById('appMenu').innerHTML='<a href="'+portalOrigin+'/">Mi espacio</a>'+apps.map(a=>'<a href="'+portalOrigin+esc(a.url)+'">'+esc(a.name)+'</a>').join('');
+    document.getElementById('appMenu').innerHTML='<a href="'+portalOrigin+'/"><span class="nav-icon">⌂</span><span class="nav-label">Mi espacio</span></a>'+apps.map(a=>'<a href="'+portalOrigin+esc(a.url)+'"><span class="nav-icon">◆</span><span class="nav-label">'+esc(a.name)+'</span></a>').join('');
   }).catch(()=>{});
+
+try{
+  const profile=JSON.parse(localStorage.getItem('auth_profile')||'{}');
+  if(profile.role==='administrator') document.getElementById('accountMenu').insertAdjacentHTML('beforeend','<a href="'+portalOrigin+'/?view=brand-assets"><span class="nav-icon">◆</span><span class="nav-label">Recursos de marca</span></a><a href="'+portalOrigin+'/?view=control-center"><span class="nav-icon">⚙</span><span class="nav-label">Centro de control</span></a>');
+}catch(e){}
 
 function pct(v){ v = Math.max(0, Math.min(100, +v||0)); return v; }
 function bar(v){ return '<div class="bar"><span style="width:'+pct(v)+'%"></span></div>'; }
