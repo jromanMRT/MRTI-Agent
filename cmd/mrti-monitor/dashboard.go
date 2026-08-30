@@ -127,7 +127,10 @@ const grid = document.getElementById('grid');
 const alertsEl = document.getElementById('alerts');
 const pill = document.getElementById('pill');
 const dlg = document.getElementById('dlg');
-const hashToken = new URLSearchParams(location.hash.slice(1)).get('token');
+const hashParams = new URLSearchParams(location.hash.slice(1));
+const hashToken = hashParams.get('token');
+const hashTheme = hashParams.get('theme');
+if(hashTheme==='light'||hashTheme==='dark') localStorage.setItem('mrti_theme',hashTheme);
 if(hashToken){ sessionStorage.setItem('mrti_portal_token', hashToken); history.replaceState({}, '', '/'); }
 const portalToken = sessionStorage.getItem('mrti_portal_token');
 const portalOrigin = location.protocol+'//'+location.hostname;
@@ -149,6 +152,7 @@ document.getElementById('collapseAction').addEventListener('click',()=>{
 document.getElementById('themeAction').addEventListener('click',()=>{
   const next=document.documentElement.dataset.theme==='dark'?'light':'dark';
   document.documentElement.dataset.theme=next; localStorage.setItem('mrti_theme',next);
+  fetch(portalOrigin+'/api/auth/profile/preferences/theme',{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+portalToken},body:JSON.stringify({theme:next})}).catch(()=>{});
 });
 const closeMobile=()=>{appShell.classList.remove('mobile-open');document.body.style.overflow='';};
 document.getElementById('mobileMenu').addEventListener('click',()=>{appShell.classList.add('mobile-open');document.body.style.overflow='hidden';});
@@ -167,6 +171,18 @@ fetch(portalOrigin+'/api/portal/v1/brand-appearance',{cache:'no-store'})
   .then(r=>r.ok?r.json():Promise.reject())
   .then(({data})=>{ if(data?.portal_logo?.content_url) document.getElementById('brandLogo').src = portalOrigin+data.portal_logo.content_url; })
   .catch(()=>{});
+
+// El puerto 8477 tiene un localStorage distinto al portal. La preferencia
+// central del usuario es la autoridad y mantiene Agent/Descargas en el mismo
+// tema aunque se entre directamente sin pasar por un enlace del sidebar.
+fetch(portalOrigin+'/api/auth/profile/preferences',{headers:{Authorization:'Bearer '+portalToken}})
+  .then(r=>r.ok?r.json():Promise.reject())
+  .then(({preferences})=>{
+    const theme=preferences?.theme;
+    if(theme==='light'||theme==='dark') localStorage.setItem('mrti_theme',theme);
+    else localStorage.removeItem('mrti_theme');
+    document.documentElement.dataset.theme=theme==='light'||theme==='dark'?theme:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  }).catch(()=>{});
 
 fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer '+portalToken}})
   .then(r=>r.ok?r.json():Promise.reject())
