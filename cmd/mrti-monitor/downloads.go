@@ -115,6 +115,16 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
   .workspace { min-width:0; }
   .topbar { position:sticky; z-index:20; top:0; display:flex; min-height:72px; align-items:center; gap:16px; padding:0 24px; border-bottom:1px solid var(--border); background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(12px); }
   .topbar-context { display:grid; margin-right:auto; }
+  .notification-center { position:relative; }
+  .notification-button { position:relative; display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--accent); background:var(--card); cursor:pointer; }
+  .notification-count { position:absolute; top:-6px; right:-7px; min-width:19px; height:19px; padding:2px 4px; border:2px solid var(--bg); border-radius:999px; color:#fff; background:#a3261b; font-size:10px; font-weight:800; }
+  .notification-panel { position:absolute; z-index:60; top:calc(100% + 10px); right:0; width:min(410px,calc(100vw - 28px)); overflow:hidden; border:1px solid var(--border); border-radius:16px; color:var(--fg); background:var(--card); box-shadow:0 20px 50px rgba(0,0,0,.28); }
+  .notification-panel[hidden] { display:none; }
+  .notification-panel header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); }
+  .notification-panel header button { width:30px; height:30px; border:1px solid var(--border); border-radius:50%; color:var(--muted); background:var(--card); cursor:pointer; }
+  .notification-list { max-height:min(30rem,70vh); overflow-y:auto; }
+  .notification-list p,.notification-list article { margin:0; padding:13px 16px; border-bottom:1px solid var(--border); color:var(--muted); }
+  .notification-list article { display:grid; gap:3px; }.notification-list article strong{color:var(--fg)}.notification-list article a{color:var(--accent);font-size:12px;font-weight:700}
   .mobile-menu,.backdrop { display:none; }
   .hero { max-width:820px; margin:50px auto 36px; padding:0 24px; text-align:center; }
   .eyebrow { color:var(--accent2); letter-spacing:.12em; text-transform:uppercase; font-size:12px; font-weight:700; }
@@ -139,8 +149,8 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
 </head>
 <body><div class="shell" id="appShell">
 <button class="backdrop" id="backdrop" type="button" aria-label="Cerrar navegación"></button>
-<aside class="sidebar"><a class="brand" href="/"><span class="brand-mark">A</span><span>MRTI Agent Core<small>Supervisión de agentes</small></span></a><nav><a href="/">⌂ <span>Agentes</span></a><a class="active" href="/downloads/">↓ <span>Descargar agente</span></a></nav><div class="sidebar-section"><span class="section-label">Mi cuenta</span><a class="account-link" id="profileLink" href="#">○ <span>Perfil</span></a></div><div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><a class="sidebar-action" id="coreLink" href="#" title="Volver a Mi espacio">⌂</a></div></aside>
-<div class="workspace"><div class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Centro de descargas</strong><small>MRTI Agent Core</small></span></div>
+<aside class="sidebar"><a class="brand" href="/"><span class="brand-mark">A</span><span>MRTI Agent Core<small>Supervisión de agentes</small></span></a><nav><a href="/">⌂ <span>Agentes</span></a><a class="active" href="/downloads/">↓ <span>Descargar agente</span></a></nav><div class="sidebar-section"><span class="section-label">Cambiar módulo</span><div id="appMenu"><a class="account-link" id="coreLink" href="#">⌂ <span>Mi espacio</span></a></div></div><div class="sidebar-section"><span class="section-label">Mi cuenta</span><a class="account-link" id="profileLink" href="#">○ <span>Perfil</span></a></div><div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action" id="logoutAction" type="button" title="Cerrar sesión">↪</button></div></aside>
+<div class="workspace"><div class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Centro de descargas</strong><small>MRTI Agent Core</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones">♢<span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" hidden><header><strong>Notificaciones</strong><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList"><p>Buscando novedades…</p></div></section></div></div>
 <header class="hero">
   <div class="eyebrow">Monitoreo sin interrupciones</div>
   <h1>Instala MRTI Agent</h1>
@@ -160,10 +170,17 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
 </main>
 <footer>Configura la URL y la clave de tu MRTI Monitor antes de ejecutar el instalador.</footer>
 </div></div><script>
-const shell=document.getElementById('appShell'), portalOrigin=location.protocol+'//'+location.hostname;
+const shell=document.getElementById('appShell'), portalOrigin=location.protocol+'//'+location.hostname, portalToken=sessionStorage.getItem('mrti_portal_token');
 document.getElementById('coreLink').href=portalOrigin+'/'; document.getElementById('profileLink').href=portalOrigin+'/?view=account';
+const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const savedTheme=localStorage.getItem('mrti_theme'); if(savedTheme) document.documentElement.dataset.theme=savedTheme;
 document.getElementById('themeAction').onclick=()=>{const next=document.documentElement.dataset.theme==='light'?'dark':'light';document.documentElement.dataset.theme=next;localStorage.setItem('mrti_theme',next)};
 document.getElementById('mobileMenu').onclick=()=>shell.classList.add('mobile-open'); document.getElementById('backdrop').onclick=()=>shell.classList.remove('mobile-open');
+document.getElementById('logoutAction').onclick=async()=>{try{if(portalToken)await fetch(portalOrigin+'/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+portalToken},body:'{}'})}catch(e){}sessionStorage.removeItem('mrti_portal_token');location.replace(portalOrigin+'/')};
+if(portalToken){
+  fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer '+portalToken}}).then(r=>r.ok?r.json():Promise.reject()).then(({data})=>{const apps=(Array.isArray(data)?data:[]).filter(a=>a.code!=='agent-core');document.getElementById('appMenu').insertAdjacentHTML('beforeend',apps.map(a=>'<a class="account-link" href="'+portalOrigin+esc(a.url)+'">◆ <span>'+esc(a.name)+'</span></a>').join(''))}).catch(()=>{});
+  fetch(portalOrigin+'/api/portal/v1/notifications',{headers:{Authorization:'Bearer '+portalToken}}).then(r=>r.ok?r.json():Promise.reject()).then(({data})=>{const items=Array.isArray(data)?data:[];const count=document.getElementById('notificationCount');if(items.length){count.hidden=false;count.textContent=items.length>9?'9+':items.length}document.getElementById('notificationList').innerHTML=items.length?items.map(item=>'<article><strong>'+esc(item.title)+'</strong><span>'+esc(item.message)+'</span>'+(item.href?'<a href="'+portalOrigin+esc(item.href)+'">Abrir →</a>':'')+'</article>').join(''):'<p>Sin novedades por ahora.</p>'}).catch(()=>{document.getElementById('notificationList').innerHTML='<p>No fue posible consultar las notificaciones.</p>'});
+}
+const notificationPanel=document.getElementById('notificationPanel');document.getElementById('notificationButton').onclick=()=>notificationPanel.hidden=!notificationPanel.hidden;document.getElementById('notificationClose').onclick=()=>notificationPanel.hidden=true;document.addEventListener('keydown',event=>{if(event.key==='Escape')notificationPanel.hidden=true});document.addEventListener('click',event=>{if(!event.target.closest('#notificationCenter'))notificationPanel.hidden=true});
 </script></body>
 </html>`))
