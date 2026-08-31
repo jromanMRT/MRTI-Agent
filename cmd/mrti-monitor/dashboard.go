@@ -58,7 +58,29 @@ const dashboardHTML = `<!doctype html>
   .topbar { position:sticky; z-index:20; top:0; display:flex; min-height:72px; align-items:center; gap:16px; padding:0 24px; border-bottom:1px solid var(--border); background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(12px); }
   .topbar-context { display:grid; }
   .topbar-context small,.pill { color:var(--faint); font-size:12px; }
-  .pill { margin-left:auto; }
+  .pill { margin-left:0; }
+  .notification-center { position:relative; margin-left:auto; }
+  .notification-button { position:relative; display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--accent-deep); background:var(--card); cursor:pointer; }
+  .notification-button:hover,.notification-button[aria-expanded="true"] { border-color:var(--accent); color:var(--accent); background:var(--soft); }
+  .notification-button svg { width:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .notification-count { position:absolute; top:-6px; right:-7px; display:grid; min-width:19px; height:19px; place-items:center; padding:0 4px; border:2px solid var(--bg); border-radius:99px; color:#fff; background:#a3261b; font-size:10px; font-weight:800; }
+  .notification-count[hidden],.notification-panel[hidden] { display:none; }
+  .notification-panel { position:absolute; z-index:70; top:calc(100% + 10px); right:0; width:min(410px,calc(100vw - 28px)); overflow:hidden; border:1px solid var(--border); border-radius:16px; background:var(--card); box-shadow:0 20px 50px rgba(0,0,0,.28); }
+  .notification-panel header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); }
+  .notification-panel header div { display:grid; }
+  .notification-panel header small { color:var(--accent-deep); font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+  .notification-panel header button { display:grid; width:30px; height:30px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--faint); background:var(--soft); cursor:pointer; }
+  .notification-list { max-height:min(30rem,70vh); overflow:auto; }
+  .notification-list > p { margin:0; padding:34px 16px; color:var(--faint); text-align:center; }
+  .notification-list > p.error { color:var(--red); background:color-mix(in srgb,var(--red) 8%,transparent); }
+  .notification-item { display:flex; align-items:flex-start; gap:11px; padding:13px 16px; border-bottom:1px solid var(--border); }
+  .notification-item:last-child { border:0; }
+  .notification-item > b { display:grid; width:36px; height:36px; flex:0 0 auto; place-items:center; border-radius:9px; color:var(--accent-deep); background:color-mix(in srgb,var(--accent) 12%,transparent); font-size:10px; }
+  .notification-item > span { display:grid; min-width:0; flex:1; gap:3px; }
+  .notification-item strong { font-size:13px; }
+  .notification-item small { color:var(--muted); font-size:11px; }
+  .notification-item time { color:var(--faint); font-size:10px; }
+  .notification-item > a { align-self:center; color:var(--accent-deep); font-size:11px; font-weight:750; white-space:nowrap; }
   .mobile-menu,.sidebar-backdrop { display:none; }
   main { padding:24px; display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
   .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; cursor:pointer; }
@@ -107,12 +129,12 @@ const dashboardHTML = `<!doctype html>
   <div class="sidebar-scroll">
     <nav class="sidebar-nav"><a class="active" href="/"><span class="nav-icon">⌂</span><span class="nav-label">Agentes</span></a><a href="/downloads/"><span class="nav-icon">↓</span><span class="nav-label">Descargar agente</span></a></nav>
     <div class="sidebar-section"><span class="section-label">Cambiar módulo</span><div id="appMenu"><a href="/"><span class="nav-icon">⌂</span><span class="nav-label">Mi espacio</span></a></div></div>
-    <div class="sidebar-section" id="accountMenu"><span class="section-label">Mi cuenta</span><a href="/" data-portal-view="account"><span class="nav-icon">○</span><span class="nav-label">Perfil</span></a><a href="/" data-portal-view="notifications"><span class="nav-icon">◔</span><span class="nav-label">Notificaciones</span></a></div>
+    <div class="sidebar-section" id="accountMenu"><span class="section-label">Mi cuenta</span><a href="/" data-portal-view="account"><span class="nav-icon">○</span><span class="nav-label">Perfil</span></a></div>
   </div>
   <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button><button class="sidebar-action logout" id="logoutAction" type="button" title="Cerrar sesión">↪</button></div>
 </aside>
 <div class="workspace">
-<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><span class="pill" id="pill">Cargando…</span></header>
+<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span></header>
 <div class="alerts" id="alerts"></div>
 <main id="grid"><div class="empty">Esperando agentes…</div></main>
 </div></div>
@@ -163,6 +185,29 @@ document.getElementById('logoutAction').addEventListener('click',async()=>{
   try{await fetch(portalOrigin+'/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+portalToken},body:'{}'});}catch(e){}
   sessionStorage.removeItem('mrti_portal_token'); localStorage.removeItem('auth_token'); localStorage.removeItem('auth_profile'); location.replace(portalOrigin+'/');
 });
+
+const notificationCenter=document.getElementById('notificationCenter');
+const notificationButton=document.getElementById('notificationButton');
+const notificationPanel=document.getElementById('notificationPanel');
+const notificationList=document.getElementById('notificationList');
+const notificationCount=document.getElementById('notificationCount');
+function closeNotifications(){notificationPanel.hidden=true;notificationButton.setAttribute('aria-expanded','false');}
+notificationButton.addEventListener('click',()=>{const opening=notificationPanel.hidden;notificationPanel.hidden=!opening;notificationButton.setAttribute('aria-expanded',String(opening));if(opening)loadNotifications();});
+document.getElementById('notificationClose').addEventListener('click',closeNotifications);
+document.addEventListener('mousedown',e=>{if(!notificationCenter.contains(e.target))closeNotifications();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNotifications();});
+function relativeNotificationTime(value){if(!value)return '';const seconds=Math.max(0,Math.floor((Date.now()-new Date(value).getTime())/1000));if(seconds<60)return 'Ahora';if(seconds<3600)return 'Hace '+Math.floor(seconds/60)+' min';if(seconds<86400)return 'Hace '+Math.floor(seconds/3600)+' h';return 'Hace '+Math.floor(seconds/86400)+' d';}
+async function loadNotifications(){
+  try{
+    const response=await fetch(portalOrigin+'/api/portal/v1/notifications',{headers:{Authorization:'Bearer '+portalToken}});
+    if(!response.ok)throw new Error(response.status);
+    const body=await response.json();const items=Array.isArray(body.data)?body.data:[];
+    notificationCount.hidden=!items.length;notificationCount.textContent=items.length>9?'9+':String(items.length);
+    notificationButton.setAttribute('aria-label',items.length?'Ver '+items.length+' notificaciones':'Ver notificaciones');
+    notificationList.innerHTML=items.length?items.map(item=>'<article class="notification-item"><b>TK</b><span><strong>'+esc(item.title)+'</strong><small>'+esc(item.message)+'</small><time>'+esc(relativeNotificationTime(item.timestamp))+'</time></span>'+(item.href?'<a href="'+portalOrigin+esc(item.href)+'">Abrir →</a>':'')+'</article>').join(''):'<p>Sin novedades por ahora.</p>';
+  }catch(e){notificationList.innerHTML='<p class="error">No fue posible consultar las notificaciones.</p>';}
+}
+loadNotifications();setInterval(loadNotifications,60000);
 
 // El logo lo administra Core (Centro de control → Recursos de marca); se
 // consulta en vivo (endpoint público, sin token) para que un cambio ahí se
