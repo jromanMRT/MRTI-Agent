@@ -116,7 +116,7 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
   .button { display:block; margin-top:14px; border-radius:10px; padding:11px 14px; text-align:center;
             color:#04101b; background:linear-gradient(90deg,var(--accent),#73c6ff); text-decoration:none; font-weight:750; }
   .button:hover { filter:brightness(1.1); transform:translateY(-1px); }
-  .missing { background:#223044; color:#8292a6; cursor:not-allowed; }
+  .missing { background:#223044; color:#a3b1c2; cursor:not-allowed; }
   footer { text-align:center; color:var(--muted); padding:0 24px 38px; }
   @media(max-width:800px){ main { grid-template-columns:1fr; } header { margin-top:25px; } }
 </style>

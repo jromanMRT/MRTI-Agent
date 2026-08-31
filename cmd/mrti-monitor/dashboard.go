@@ -20,7 +20,7 @@ const dashboardHTML = `<!doctype html>
 <title>MRTI Agent Core</title>
 <style>
   :root { --bg:#f6f2e7; --card:#fff; --soft:#f1ead9; --border:#e1d3ab; --fg:#221b12; --muted:#6c5f47;
-          --faint:#9c8f78; --green:#2f7d43; --red:#a1432f; --amber:#92600e; --accent:#a9781f; --accent-deep:#6e4d16; }
+          --faint:#705f3f; --green:#2f7d43; --red:#a1432f; --amber:#744705; --accent:#754e0d; --accent-deep:#6e4d16; }
   :root[data-theme="dark"] { --bg:#17120c; --card:#251e13; --soft:#2f2517; --border:#4a3a22; --fg:#f5ecd9;
           --muted:#d7cab1; --faint:#a8956f; --green:#6fcf8c; --red:#e08a72; --amber:#f3bf5e; --accent:#d9a63c; --accent-deep:#caa054; }
   * { box-sizing:border-box; }
