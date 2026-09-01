@@ -92,6 +92,8 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Descargar MRTI Agent</title>
 <style>
+  @font-face { font-family:"Big Shoulders Display"; font-style:normal; font-weight:700 800; font-display:swap; src:url("/fonts/big-shoulders-display-800.woff2") format("woff2"); }
+  @font-face { font-family:"IBM Plex Sans"; font-style:normal; font-weight:400 600; font-display:swap; src:url("/fonts/ibm-plex-sans-400.woff2") format("woff2"); }
   :root { --bg:#f6f2e7; --card:#fff; --border:#e1d3ab; --fg:#221b12;
           --muted:#6c5f47; --accent:#6e4d16; --accent2:#a9781f; color-scheme:light; }
   :root[data-theme=dark] { --bg:#17120c; --card:#251e13; --border:#4a3a22; --fg:#f5ecd9; --muted:#d7cab1; --accent:#d9a63c; --accent2:#f3d68d; color-scheme:dark; }
@@ -99,12 +101,16 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
   * { box-sizing:border-box; }
   body { margin:0; min-height:100vh; color:var(--fg); background:
     radial-gradient(circle at 80% 5%,color-mix(in srgb,var(--accent) 12%,transparent) 0,transparent 30%),var(--bg);
-    font:15px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    font:15px/1.5 "IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
   .shell { display:grid; grid-template-columns:256px minmax(0,1fr); min-height:100vh; }
   .sidebar { position:sticky; z-index:40; top:0; display:flex; height:100vh; padding:18px 14px; flex-direction:column; border-right:1px solid var(--border); background:var(--card); }
-  .brand { display:flex; align-items:center; gap:11px; min-height:61px; padding:0 4px 18px; border-bottom:1px solid var(--border); color:var(--fg); font-weight:750; text-decoration:none; }
-  .brand-mark { display:grid; width:42px; height:42px; place-items:center; border:1px solid var(--accent); border-radius:12px; color:var(--accent); }
-  .brand small,.topbar small { display:block; color:var(--muted); font-size:11px; }
+  .brand { display:flex; align-items:center; gap:12px; min-height:61px; padding:0 4px 18px; border-bottom:1px solid var(--border); }
+  .brand-mark { display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border:1px solid color-mix(in srgb,var(--accent) 30%,transparent); border-radius:12px; color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--card)); text-decoration:none; }
+  .brand-mark img { width:34px; height:34px; }
+  .brand-copy { display:grid; min-width:0; }
+  .brand-copy strong { overflow:hidden; font-family:"Big Shoulders Display",system-ui,sans-serif; font-size:1.15rem; font-weight:800; letter-spacing:.1em; line-height:1.2; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+  .brand-copy small { overflow:hidden; max-width:150px; color:var(--muted); font-size:.78rem; font-weight:600; letter-spacing:.08em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+  .topbar small { display:block; color:var(--muted); font-size:11px; }
   .sidebar nav { display:grid; gap:4px; padding-top:14px; }
   .sidebar nav a,.account-link { display:flex; min-height:42px; align-items:center; gap:11px; padding:9px 11px; border-radius:11px; color:var(--muted); text-decoration:none; }
   .sidebar nav a:hover,.sidebar nav a.active,.account-link:hover { color:var(--fg); background:color-mix(in srgb,var(--accent) 13%,var(--card)); }
@@ -149,7 +155,7 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
 </head>
 <body><div class="shell" id="appShell">
 <button class="backdrop" id="backdrop" type="button" aria-label="Cerrar navegación"></button>
-<aside class="sidebar"><a class="brand" href="/"><span class="brand-mark">A</span><span>MRTI Agent Core<small>Supervisión de agentes</small></span></a><nav><a href="/">⌂ <span>Agentes</span></a><a class="active" href="/downloads/">↓ <span>Descargar agente</span></a></nav><div class="sidebar-section"><span class="section-label">Cambiar módulo</span><div id="appMenu"><a class="account-link" id="coreLink" href="#">⌂ <span>Mi espacio</span></a></div></div><div class="sidebar-section"><span class="section-label">Mi cuenta</span><a class="account-link" id="profileLink" href="#">○ <span>Perfil</span></a></div><div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action" id="logoutAction" type="button" title="Cerrar sesión">↪</button></div></aside>
+<aside class="sidebar"><div class="brand"><a class="brand-mark" id="brandLink" href="/" title="Ir a Mi espacio" aria-label="Ir a Mi espacio"><img src="/company-logo.svg" alt=""></a><span class="brand-copy"><strong>MRTI Agent Core</strong><small>Minera Río Tinto</small></span></div><nav><a href="/">⌂ <span>Agentes</span></a><a class="active" href="/downloads/">↓ <span>Descargar agente</span></a></nav><div class="sidebar-section"><span class="section-label">Cambiar módulo</span><div id="appMenu"><a class="account-link" id="coreLink" href="#">⌂ <span>Mi espacio</span></a></div></div><div class="sidebar-section"><span class="section-label">Mi cuenta</span><a class="account-link" id="profileLink" href="#">○ <span>Perfil</span></a></div><div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action" id="logoutAction" type="button" title="Cerrar sesión">↪</button></div></aside>
 <div class="workspace"><div class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Centro de descargas</strong><small>MRTI Agent Core</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones">♢<span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" hidden><header><strong>Notificaciones</strong><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList"><p>Buscando novedades…</p></div></section></div></div>
 <header class="hero">
   <div class="eyebrow">Monitoreo sin interrupciones</div>
@@ -171,7 +177,7 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
 <footer>Configura la URL y la clave de tu MRTI Monitor antes de ejecutar el instalador.</footer>
 </div></div><script>
 const shell=document.getElementById('appShell'), portalOrigin=location.protocol+'//'+location.hostname, portalToken=sessionStorage.getItem('mrti_portal_token');
-document.getElementById('coreLink').href=portalOrigin+'/'; document.getElementById('profileLink').href=portalOrigin+'/?view=account';
+document.getElementById('brandLink').href=portalOrigin+'/'; document.getElementById('coreLink').href=portalOrigin+'/'; document.getElementById('profileLink').href=portalOrigin+'/?view=account';
 const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const savedTheme=localStorage.getItem('mrti_theme'); if(savedTheme) document.documentElement.dataset.theme=savedTheme;
 document.getElementById('themeAction').onclick=()=>{const next=document.documentElement.dataset.theme==='light'?'dark':'light';document.documentElement.dataset.theme=next;localStorage.setItem('mrti_theme',next)};

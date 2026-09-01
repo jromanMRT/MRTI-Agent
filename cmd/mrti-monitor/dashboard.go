@@ -19,6 +19,8 @@ const dashboardHTML = `<!doctype html>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSI4IiB5MT0iOCIgeDI9IjU2IiB5Mj0iNTYiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agc3RvcC1jb2xvcj0iIzU1YmRmNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM1MGQ0YmQiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE2IiBmaWxsPSIjMGIxYTI5Ii8+CiAgPHBhdGggZD0iTTEzIDIwIDMyIDEwbDE5IDEwdjI1TDMyIDU1IDEzIDQ1VjIwWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2cpIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJtMjMgMjUgOS01IDkgNXYxNWwtOSA1LTktNVYyNVoiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnKSIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" />
 <title>MRTI Agent Core</title>
 <style>
+  @font-face { font-family:"Big Shoulders Display"; font-style:normal; font-weight:700 800; font-display:swap; src:url("/fonts/big-shoulders-display-800.woff2") format("woff2"); }
+  @font-face { font-family:"IBM Plex Sans"; font-style:normal; font-weight:400 600; font-display:swap; src:url("/fonts/ibm-plex-sans-400.woff2") format("woff2"); }
   :root { --bg:#f6f2e7; --card:#fff; --soft:#f1ead9; --border:#e1d3ab; --fg:#221b12; --muted:#6c5f47;
           --faint:#705f3f; --green:#2f7d43; --red:#a1432f; --amber:#744705; --accent:#754e0d; --accent-deep:#6e4d16; }
   :root[data-theme="dark"] { --bg:#17120c; --card:#251e13; --soft:#2f2517; --border:#4a3a22; --fg:#f5ecd9;
@@ -33,14 +35,15 @@ const dashboardHTML = `<!doctype html>
              overflow:hidden; border-right:1px solid var(--border); background:linear-gradient(180deg,rgba(217,166,60,.055),transparent 13rem),var(--card); }
   .collapsed .sidebar { padding-inline:10px; }
   .sidebar-brand { min-height:61px; padding:0 4px 18px; border-bottom:1px solid var(--border); }
-  .brand-link { display:flex; align-items:center; gap:12px; color:var(--fg); text-decoration:none; }
+  .brand-row { display:flex; min-width:0; align-items:center; gap:12px; }
+  .brand-link { display:grid; flex:0 0 auto; color:var(--accent-deep); text-decoration:none; }
   .brand-mark { display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border:1px solid color-mix(in srgb,var(--accent) 30%,transparent); border-radius:12px; background:color-mix(in srgb,var(--accent) 10%,var(--card)); }
   .brand-mark img { width:34px; height:34px; }
   .brand-copy { display:grid; min-width:0; }
-  .brand-copy strong { font-size:16px; }
-  .brand-copy small { color:var(--accent-deep); font-size:11px; }
+  .brand-copy strong { overflow:hidden; font-family:"Big Shoulders Display",system-ui,sans-serif; font-size:1.15rem; font-weight:800; letter-spacing:.1em; line-height:1.2; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+  .brand-copy small { overflow:hidden; max-width:150px; color:var(--faint); font-size:.78rem; font-weight:600; letter-spacing:.08em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
   .collapsed .brand-copy,.collapsed .nav-label,.collapsed .section-label { display:none; }
-  .collapsed .brand-link,.collapsed .sidebar-nav a,.collapsed .sidebar-section a { justify-content:center; }
+  .collapsed .brand-row,.collapsed .sidebar-nav a,.collapsed .sidebar-section a { justify-content:center; }
   .sidebar-nav { display:grid; gap:4px; padding-top:14px; }
   .sidebar-nav a,.sidebar-section a { display:flex; min-height:42px; align-items:center; gap:11px; padding:9px 11px; border-radius:11px; color:var(--muted); text-decoration:none; }
   .sidebar-nav a:hover,.sidebar-section a:hover { color:var(--fg); background:var(--soft); }
@@ -110,7 +113,7 @@ const dashboardHTML = `<!doctype html>
     .sidebar,.collapsed .sidebar { position:fixed; width:min(280px,calc(100vw - 42px)); padding:18px 14px; transform:translateX(-105%); transition:transform 200ms ease; }
     .mobile-open .sidebar { transform:translateX(0); box-shadow:0 24px 70px rgba(0,0,0,.32); }
     .collapsed .brand-copy,.collapsed .nav-label,.collapsed .section-label { display:initial; }
-    .collapsed .brand-link,.collapsed .sidebar-nav a,.collapsed .sidebar-section a { justify-content:flex-start; }
+    .collapsed .brand-row,.collapsed .sidebar-nav a,.collapsed .sidebar-section a { justify-content:flex-start; }
     .collapsed .sidebar-footer { flex-direction:row; }
     .collapse-action { display:none; }
     .mobile-menu { display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:10px; color:var(--accent-deep); background:var(--card); }
@@ -125,7 +128,7 @@ const dashboardHTML = `<!doctype html>
 <div class="app-shell" id="appShell">
 <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Cerrar navegación"></button>
 <aside class="sidebar" aria-label="Navegación de Agent Core">
-  <div class="sidebar-brand"><a class="brand-link" id="brandLink" href="/"><span class="brand-mark"><img id="brandLogo" src="/company-logo.svg" alt=""></span><span class="brand-copy"><strong>MRTI Agent Core</strong><small>Volver a Mi espacio</small></span></a></div>
+  <div class="sidebar-brand"><div class="brand-row"><a class="brand-link" id="brandLink" href="/" title="Ir a Mi espacio" aria-label="Ir a Mi espacio"><span class="brand-mark"><img id="brandLogo" src="/company-logo.svg" alt=""></span></a><span class="brand-copy"><strong>MRTI Agent Core</strong><small>Minera Río Tinto</small></span></div></div>
   <div class="sidebar-scroll">
     <nav class="sidebar-nav"><a class="active" href="/"><span class="nav-icon">⌂</span><span class="nav-label">Agentes</span></a><a href="/downloads/"><span class="nav-icon">↓</span><span class="nav-label">Descargar agente</span></a></nav>
     <div class="sidebar-section"><span class="section-label">Cambiar módulo</span><div id="appMenu"><a href="/"><span class="nav-icon">⌂</span><span class="nav-label">Mi espacio</span></a></div></div>
