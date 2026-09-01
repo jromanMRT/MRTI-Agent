@@ -19,8 +19,6 @@ const dashboardHTML = `<!doctype html>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSI4IiB5MT0iOCIgeDI9IjU2IiB5Mj0iNTYiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agc3RvcC1jb2xvcj0iIzU1YmRmNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM1MGQ0YmQiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE2IiBmaWxsPSIjMGIxYTI5Ii8+CiAgPHBhdGggZD0iTTEzIDIwIDMyIDEwbDE5IDEwdjI1TDMyIDU1IDEzIDQ1VjIwWiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2cpIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJtMjMgMjUgOS01IDkgNXYxNWwtOSA1LTktNVYyNVoiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnKSIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=" />
 <title>MRTI Agent Core</title>
 <style>
-  @font-face { font-family:"Big Shoulders Display"; font-style:normal; font-weight:700 800; font-display:swap; src:url("/fonts/big-shoulders-display-800.woff2") format("woff2"); }
-  @font-face { font-family:"IBM Plex Sans"; font-style:normal; font-weight:400 600; font-display:swap; src:url("/fonts/ibm-plex-sans-400.woff2") format("woff2"); }
   :root { --bg:#f6f2e7; --card:#fff; --soft:#f1ead9; --border:#e1d3ab; --fg:#221b12; --muted:#6c5f47;
           --faint:#705f3f; --green:#2f7d43; --red:#a1432f; --amber:#744705; --accent:#754e0d; --accent-deep:#6e4d16; }
   :root[data-theme="dark"] { --bg:#17120c; --card:#251e13; --soft:#2f2517; --border:#4a3a22; --fg:#f5ecd9;
@@ -159,6 +157,9 @@ if(hashTheme==='light'||hashTheme==='dark') localStorage.setItem('mrti_theme',ha
 if(hashToken){ sessionStorage.setItem('mrti_portal_token', hashToken); history.replaceState({}, '', '/'); }
 const portalToken = sessionStorage.getItem('mrti_portal_token');
 const portalOrigin = location.protocol+'//'+location.hostname;
+const sharedFontStyle = document.createElement('style');
+sharedFontStyle.textContent = '@font-face{font-family:"Big Shoulders Display";font-style:normal;font-weight:700 800;font-display:swap;src:url("'+portalOrigin+'/fonts/big-shoulders-display-800.woff2") format("woff2")}@font-face{font-family:"IBM Plex Sans";font-style:normal;font-weight:400 600;font-display:swap;src:url("'+portalOrigin+'/fonts/ibm-plex-sans-400.woff2") format("woff2")}';
+document.head.append(sharedFontStyle);
 document.getElementById('brandLink').href = portalOrigin+'/';
 document.querySelector('#appMenu a').href = portalOrigin+'/';
 document.querySelectorAll('[data-portal-view]').forEach(a=>a.href=portalOrigin+'/?view='+a.dataset.portalView);
