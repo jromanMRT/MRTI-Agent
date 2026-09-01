@@ -41,6 +41,7 @@ func coreHandler(store *Store, apiKey, downloadsDir string) http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
 	mux.HandleFunc("GET /downloads/", srv.downloadsPage)
 	mux.HandleFunc("GET /downloads/files/{name}", srv.downloadFile)
+	mux.HandleFunc("GET /portal-assets/{name}", portalAsset)
 
 	// Dashboard.
 	mux.HandleFunc("GET /", srv.dashboard)
