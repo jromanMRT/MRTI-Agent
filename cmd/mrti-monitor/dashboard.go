@@ -62,6 +62,11 @@ const dashboardHTML = `<!doctype html>
   .topbar-context { display:grid; }
   .topbar-context small,.pill { color:var(--faint); font-size:12px; }
   .pill { margin-left:0; }
+  .print-report-button { display:inline-flex; min-height:38px; align-items:center; gap:8px; margin-left:auto; padding:0 12px; border:1px solid var(--border); border-radius:10px; color:var(--accent-deep); background:var(--card); font-size:12px; font-weight:700; cursor:pointer; }
+  .print-report-button:hover { border-color:var(--accent); color:var(--accent); background:var(--soft); }
+  .print-report-button svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .print-report-button + .notification-center { margin-left:0; }
+  .print-report-header { display:none; }
   .notification-center { position:relative; margin-left:auto; }
   .notification-button { position:relative; display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--accent-deep); background:var(--card); cursor:pointer; }
   .notification-button:hover,.notification-button[aria-expanded="true"] { border-color:var(--accent); color:var(--accent); background:var(--soft); }
@@ -122,6 +127,24 @@ const dashboardHTML = `<!doctype html>
     main { padding:18px; grid-template-columns:1fr; }
     .alerts { margin-inline:18px; }
   }
+  @media(max-width:560px){ .print-report-button span { display:none; } .print-report-button { width:38px; justify-content:center; padding:0; } }
+  @media print {
+    @page { margin:12mm; }
+    :root,:root[data-theme="dark"] { --bg:#f6f2e7; --card:#fff; --soft:#f1ead9; --border:#e1d3ab; --fg:#221b12; --muted:#6c5f47; --faint:#705f3f; --green:#2f7d43; --red:#a1432f; --amber:#744705; --accent:#754e0d; --accent-deep:#6e4d16; color-scheme:light; }
+    html,body { min-width:0!important; background:#fff!important; color:#17120c!important; }
+    body { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+    .app-shell,.app-shell.collapsed { display:block; }
+    .sidebar,.sidebar-backdrop,.topbar,button,dialog { display:none!important; }
+    .print-report-header { display:flex; align-items:end; justify-content:space-between; gap:24px; margin:0 0 18px; padding:0 0 12px; border-bottom:2px solid #a9781f; color:#221b12; }
+    .print-report-header div { display:grid; gap:2px; }
+    .print-report-header strong { font:800 20px/1.1 "Big Shoulders Display",sans-serif; letter-spacing:.1em; }
+    .print-report-header span,.print-report-header small { font:600 11px/1.4 "IBM Plex Sans",sans-serif; }
+    .workspace { width:100%; }
+    .alerts { margin:0 0 16px; }
+    main { padding:0; grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .card,.alert { break-inside:avoid; }
+    a { color:inherit!important; text-decoration:none!important; }
+  }
 </style>
 </head>
 <body>
@@ -137,7 +160,8 @@ const dashboardHTML = `<!doctype html>
   <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button><button class="sidebar-action logout" id="logoutAction" type="button" title="Cerrar sesión">↪</button></div>
 </aside>
 <div class="workspace">
-<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span></header>
+<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><button class="print-report-button" type="button" onclick="window.print()" title="Imprimir reporte de agentes" aria-label="Imprimir reporte de agentes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg><span>Imprimir reporte</span></button><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span></header>
+<div class="print-report-header" aria-hidden="true"><div><strong>MRTI</strong><span>Agent Core · Estado de agentes</span></div><small id="printGenerated"></small></div>
 <div class="alerts" id="alerts"></div>
 <main id="grid"><div class="empty">Esperando agentes…</div></main>
 </div></div>
@@ -151,6 +175,7 @@ const dashboardHTML = `<!doctype html>
 const grid = document.getElementById('grid');
 const alertsEl = document.getElementById('alerts');
 const pill = document.getElementById('pill');
+document.getElementById('printGenerated').textContent='Generado '+new Date().toLocaleString('es-MX');
 const dlg = document.getElementById('dlg');
 const hashParams = new URLSearchParams(location.hash.slice(1));
 const hashToken = hashParams.get('token');
