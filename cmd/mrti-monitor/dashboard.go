@@ -61,6 +61,9 @@ const dashboardHTML = `<!doctype html>
   .topbar { position:sticky; z-index:20; top:0; display:flex; min-height:72px; align-items:center; gap:16px; padding:0 24px; border-bottom:1px solid var(--border); background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(12px); }
   .topbar-context { display:grid; }
   .topbar-context small,.pill { color:var(--faint); font-size:12px; }
+  .header-module-switcher { display:grid; flex:0 0 auto; gap:2px; }
+  .header-module-switcher > span { color:var(--faint); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .header-module-switcher select { min-width:150px; max-width:210px; height:34px; padding:0 30px 0 10px; border:1px solid var(--border); border-radius:9px; color:var(--fg); background:var(--card); font-size:12px; font-weight:700; cursor:pointer; }
   .pill { margin-left:0; }
   .notification-center { position:relative; margin-left:auto; }
   .notification-button { position:relative; display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--accent-deep); background:var(--card); cursor:pointer; }
@@ -117,6 +120,9 @@ const dashboardHTML = `<!doctype html>
     .collapsed .sidebar-footer { flex-direction:row; }
     .collapse-action { display:none; }
     .mobile-menu { display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:10px; color:var(--accent-deep); background:var(--card); }
+    .header-module-switcher > span { display:none; }
+    .header-module-switcher select { min-width:0; max-width:132px; }
+    .topbar-context { display:none; }
     .sidebar-backdrop { position:fixed; z-index:35; inset:0; border:0; background:rgba(0,0,0,.54); }
     .mobile-open .sidebar-backdrop { display:block; }
     main { padding:18px; grid-template-columns:1fr; }
@@ -131,13 +137,12 @@ const dashboardHTML = `<!doctype html>
   <div class="sidebar-brand"><div class="brand-row"><a class="brand-link" id="brandLink" href="/" title="Ir a Mi espacio" aria-label="Ir a Mi espacio"><span class="brand-mark"><img id="brandLogo" src="/portal-assets/company-logo.svg" alt=""></span></a><span class="brand-copy"><strong>MRTI</strong><small>Minera Río Tinto</small></span></div></div>
   <div class="sidebar-scroll">
     <nav class="sidebar-nav"><a class="active" href="/"><span class="nav-icon">⌂</span><span class="nav-label">Agentes</span></a><a href="/downloads/"><span class="nav-icon">↓</span><span class="nav-label">Descargar agente</span></a></nav>
-    <div class="sidebar-section"><span class="section-label">Cambiar módulo</span><div id="appMenu"><a href="/"><span class="nav-icon">⌂</span><span class="nav-label">Mi espacio</span></a></div></div>
     <div class="sidebar-section" id="accountMenu"><span class="section-label">Mi cuenta</span><a href="/" data-portal-view="account"><span class="nav-icon">○</span><span class="nav-label">Perfil</span></a></div>
   </div>
   <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button><button class="sidebar-action logout" id="logoutAction" type="button" title="Cerrar sesión">↪</button></div>
 </aside>
 <div class="workspace">
-<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span></header>
+<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><label class="header-module-switcher"><span>Cambiar módulo</span><select id="moduleSelect" aria-label="Cambiar de módulo"><option value="" selected disabled>MRTI Agent Core</option></select></label><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span></header>
 <div class="alerts" id="alerts"></div>
 <main id="grid"><div class="empty">Esperando agentes…</div></main>
 </div></div>
@@ -236,8 +241,9 @@ fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer
   .then(r=>r.ok?r.json():Promise.reject())
   .then(({data})=>{
     const apps=(Array.isArray(data)?data:[]).filter(a=>a.code!=='agent-core');
-    document.getElementById('appMenu').innerHTML='<a href="'+portalOrigin+'/"><span class="nav-icon">⌂</span><span class="nav-label">Mi espacio</span></a>'+apps.map(a=>'<a href="'+portalOrigin+esc(a.url)+'"><span class="nav-icon">◆</span><span class="nav-label">'+esc(a.name)+'</span></a>').join('');
+    document.getElementById('moduleSelect').insertAdjacentHTML('beforeend','<option value="'+portalOrigin+'/">Mi espacio</option>'+apps.map(a=>'<option value="'+portalOrigin+esc(a.url)+'">'+esc(a.name)+'</option>').join(''));
   }).catch(()=>{});
+document.getElementById('moduleSelect').onchange=event=>{if(event.target.value)location.assign(event.target.value)};
 
 try{
   const profile=JSON.parse(localStorage.getItem('auth_profile')||'{}');
