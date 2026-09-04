@@ -36,11 +36,13 @@ const dashboardHTML = `<!doctype html>
   .collapsed .sidebar { padding-inline:10px; }
   .sidebar-brand { min-height:61px; padding:0 4px 18px; border-bottom:1px solid var(--border); }
   .brand-row { display:flex; min-width:0; align-items:center; gap:12px; }
-  .brand-link { display:grid; flex:0 0 auto; color:var(--accent-deep); text-decoration:none; }
+  .brand-link { display:flex; width:100%; align-items:center; gap:12px; padding:3px; border:1px solid transparent; border-radius:14px; color:var(--accent-deep); text-decoration:none; transition:border-color 160ms ease,background 160ms ease; }
+  .brand-link:hover { border-color:var(--border); background:var(--soft); }
   .brand-mark { display:grid; width:42px; height:42px; flex:0 0 auto; place-items:center; border:1px solid color-mix(in srgb,var(--accent) 30%,transparent); border-radius:12px; background:color-mix(in srgb,var(--accent) 10%,var(--card)); }
   .brand-mark img { width:34px; height:34px; }
   .brand-copy { display:grid; min-width:0; }
-  .brand-copy strong { overflow:hidden; font-family:"Big Shoulders Display",system-ui,sans-serif; font-size:1.15rem; font-weight:800; letter-spacing:.1em; line-height:1.2; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+  .brand-copy strong { display:flex; align-items:baseline; gap:7px; overflow:hidden; font-family:"Big Shoulders Display",system-ui,sans-serif; font-size:1.15rem; font-weight:800; letter-spacing:.1em; line-height:1.2; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+  .brand-module { color:var(--accent-deep); font-size:.74em; letter-spacing:.04em; }
   .brand-copy small { overflow:hidden; max-width:150px; color:var(--faint); font-size:.78rem; font-weight:600; letter-spacing:.08em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
   .collapsed .brand-copy,.collapsed .nav-label,.collapsed .section-label { display:none; }
   .collapsed .brand-row,.collapsed .sidebar-nav a,.collapsed .sidebar-section a { justify-content:center; }
@@ -87,6 +89,13 @@ const dashboardHTML = `<!doctype html>
   .notification-item small { color:var(--muted); font-size:11px; }
   .notification-item time { color:var(--faint); font-size:10px; }
   .notification-item > a { align-self:center; color:var(--accent-deep); font-size:11px; font-weight:750; white-space:nowrap; }
+  .account-menu { position:relative; }
+  .account-trigger { display:flex; align-items:center; gap:9px; padding:0; border:0; color:var(--fg); background:transparent; cursor:pointer; text-align:left; }
+  .account-avatar { display:grid; width:34px; height:34px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--accent-deep); background:var(--card); font-size:11px; font-weight:800; }
+  .account-identity { display:grid; max-width:180px; }.account-identity strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.account-identity small{color:var(--faint);font-size:10px;text-transform:capitalize}.account-chevron{color:var(--faint)}
+  .account-trigger[aria-expanded="true"] .account-chevron { transform:rotate(180deg); }
+  .account-panel { position:absolute; z-index:70; top:calc(100% + 10px); right:0; width:220px; padding:7px; border:1px solid var(--border); border-radius:12px; background:var(--card); box-shadow:0 18px 45px rgba(0,0,0,.22); }
+  .account-panel[hidden]{display:none}.account-panel a,.account-panel button{display:flex;width:100%;align-items:center;gap:10px;padding:10px 11px;border:0;border-radius:8px;color:var(--muted);background:transparent;cursor:pointer;font:inherit;font-size:12px;font-weight:650;text-align:left;text-decoration:none}.account-panel a:hover,.account-panel button:hover{color:var(--fg);background:var(--soft)}.account-panel .account-logout{margin-top:5px;border-top:1px solid var(--border);border-radius:0 0 8px 8px;color:var(--red)}
   .mobile-menu,.sidebar-backdrop { display:none; }
   main { padding:24px; display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
   .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; cursor:pointer; }
@@ -123,6 +132,7 @@ const dashboardHTML = `<!doctype html>
     .header-module-switcher > span { display:none; }
     .header-module-switcher select { min-width:0; max-width:132px; }
     .topbar-context { display:none; }
+    .account-identity { display:none; }
     .sidebar-backdrop { position:fixed; z-index:35; inset:0; border:0; background:rgba(0,0,0,.54); }
     .mobile-open .sidebar-backdrop { display:block; }
     main { padding:18px; grid-template-columns:1fr; }
@@ -134,15 +144,14 @@ const dashboardHTML = `<!doctype html>
 <div class="app-shell" id="appShell">
 <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Cerrar navegación"></button>
 <aside class="sidebar" aria-label="Navegación de Agent Core">
-  <div class="sidebar-brand"><div class="brand-row"><a class="brand-link" id="brandLink" href="/" title="Ir a Mi espacio" aria-label="Ir a Mi espacio"><span class="brand-mark"><img id="brandLogo" src="/portal-assets/company-logo.svg" alt=""></span></a><span class="brand-copy"><strong>MRTI</strong><small>Minera Río Tinto</small></span></div></div>
+  <div class="sidebar-brand"><div class="brand-row"><a class="brand-link" id="brandLink" href="/" title="Ir a MRTI Core" aria-label="Ir a MRTI Core"><span class="brand-mark"><img id="brandLogo" src="/portal-assets/company-logo.svg" alt=""></span><span class="brand-copy"><strong><span>MRTI</span><span class="brand-module">Agent Core</span></strong><small>Minera Río Tinto</small></span></a></div></div>
   <div class="sidebar-scroll">
     <nav class="sidebar-nav"><a class="active" href="/"><span class="nav-icon">⌂</span><span class="nav-label">Agentes</span></a><a href="/downloads/"><span class="nav-icon">↓</span><span class="nav-label">Descargar agente</span></a></nav>
-    <div class="sidebar-section" id="accountMenu"><span class="section-label">Mi cuenta</span><a href="/" data-portal-view="account"><span class="nav-icon">○</span><span class="nav-label">Perfil</span></a></div>
   </div>
-  <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button><button class="sidebar-action logout" id="logoutAction" type="button" title="Cerrar sesión">↪</button></div>
+  <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button></div>
 </aside>
 <div class="workspace">
-<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><label class="header-module-switcher"><span>Cambiar módulo</span><select id="moduleSelect" aria-label="Cambiar de módulo"><option value="" selected disabled>MRTI Agent Core</option></select></label><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span></header>
+<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><label class="header-module-switcher"><span>Cambiar módulo</span><select id="moduleSelect" aria-label="Cambiar de módulo"><option value="" selected disabled>MRTI Agent Core</option></select></label><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="/" data-portal-view="account" role="menuitem">○ Perfil</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></header>
 <div class="alerts" id="alerts"></div>
 <main id="grid"><div class="empty">Esperando agentes…</div></main>
 </div></div>
@@ -165,7 +174,6 @@ if(hashToken){ sessionStorage.setItem('mrti_portal_token', hashToken); history.r
 const portalToken = sessionStorage.getItem('mrti_portal_token');
 const portalOrigin = location.protocol+'//'+location.hostname;
 document.getElementById('brandLink').href = portalOrigin+'/';
-document.querySelector('#appMenu a').href = portalOrigin+'/';
 document.querySelectorAll('[data-portal-view]').forEach(a=>a.href=portalOrigin+'/?view='+a.dataset.portalView);
 if(!portalToken) location.replace(location.protocol+'//'+location.hostname+'/?returnTo='+encodeURIComponent('/agent-core/'));
 
@@ -193,6 +201,11 @@ document.getElementById('logoutAction').addEventListener('click',async()=>{
   try{await fetch(portalOrigin+'/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+portalToken},body:'{}'});}catch(e){}
   sessionStorage.removeItem('mrti_portal_token'); localStorage.removeItem('auth_token'); localStorage.removeItem('auth_profile'); location.replace(portalOrigin+'/');
 });
+const accountMenu=document.getElementById('accountMenu'),accountTrigger=document.getElementById('accountTrigger'),accountPanel=document.getElementById('accountPanel');
+const closeAccount=()=>{accountPanel.hidden=true;accountTrigger.setAttribute('aria-expanded','false')};
+accountTrigger.addEventListener('click',()=>{const opening=accountPanel.hidden;accountPanel.hidden=!opening;accountTrigger.setAttribute('aria-expanded',String(opening))});
+document.addEventListener('mousedown',e=>{if(!accountMenu.contains(e.target))closeAccount()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAccount()});
 
 const notificationCenter=document.getElementById('notificationCenter');
 const notificationButton=document.getElementById('notificationButton');
@@ -245,10 +258,7 @@ fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer
   }).catch(()=>{});
 document.getElementById('moduleSelect').onchange=event=>{if(event.target.value)location.assign(event.target.value)};
 
-try{
-  const profile=JSON.parse(localStorage.getItem('auth_profile')||'{}');
-  if(profile.role==='administrator') document.getElementById('accountMenu').insertAdjacentHTML('beforeend','<a href="'+portalOrigin+'/?view=brand-assets"><span class="nav-icon">◆</span><span class="nav-label">Recursos de marca</span></a><a href="'+portalOrigin+'/?view=control-center"><span class="nav-icon">⚙</span><span class="nav-label">Centro de control</span></a>');
-}catch(e){}
+fetch(portalOrigin+'/api/auth/me',{headers:{Authorization:'Bearer '+portalToken}}).then(r=>r.ok?r.json():Promise.reject()).then(({profile})=>{const name=profile?.full_name||'Usuario';document.getElementById('accountName').textContent=name;document.getElementById('accountRole').textContent=profile?.role||'Sesión activa';document.getElementById('accountAvatar').textContent=name.split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase()||'U';if(profile?.role==='administrator')document.getElementById('adminAccountLinks').innerHTML='<a href="'+portalOrigin+'/?view=brand-assets" role="menuitem">◆ Recursos de marca</a><a href="'+portalOrigin+'/?view=control-center" role="menuitem">⚙ Centro de control</a>'}).catch(()=>{});
 
 function pct(v){ v = Math.max(0, Math.min(100, +v||0)); return v; }
 function bar(v){ return '<div class="bar"><span style="width:'+pct(v)+'%"></span></div>'; }
