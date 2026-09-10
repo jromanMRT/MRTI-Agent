@@ -7,6 +7,7 @@ package main
 
 import (
 	"compress/gzip"
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -72,7 +73,9 @@ func (s *server) requirePortalAccess(next http.HandlerFunc) http.HandlerFunc {
 		if authURL == "" {
 			authURL = "http://127.0.0.1:3002/api/auth/module-access/agent-core"
 		}
-		request, err := http.NewRequestWithContext(r.Context(), http.MethodGet, authURL, nil)
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, authURL, nil)
 		if err != nil {
 			http.Error(w, "authorization unavailable", http.StatusServiceUnavailable)
 			return
