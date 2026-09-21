@@ -173,7 +173,7 @@ if(hashTheme==='light'||hashTheme==='dark') localStorage.setItem('mrti_theme',ha
 if(hashToken){ sessionStorage.setItem('mrti_portal_token', hashToken); history.replaceState({}, '', '/'); }
 const portalToken = sessionStorage.getItem('mrti_portal_token');
 const portalOrigin = location.protocol+'//'+location.hostname;
-document.getElementById('brandLink').href = portalOrigin+'/';
+document.getElementById('brandLink').href = portalOrigin+'/mi-espacio';
 document.querySelectorAll('[data-portal-view]').forEach(a=>a.href=portalOrigin+'/?view='+a.dataset.portalView);
 if(!portalToken) location.replace(location.protocol+'//'+location.hostname+'/?returnTo='+encodeURIComponent('/agent-core/'));
 
@@ -254,7 +254,7 @@ fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer
   .then(r=>r.ok?r.json():Promise.reject())
   .then(({data})=>{
     const apps=(Array.isArray(data)?data:[]).filter(a=>a.code!=='agent-core');
-    document.getElementById('moduleSelect').insertAdjacentHTML('beforeend','<option value="'+portalOrigin+'/">Mi espacio</option>'+apps.map(a=>'<option value="'+portalOrigin+esc(a.url)+'">'+esc(a.name)+'</option>').join(''));
+    document.getElementById('moduleSelect').insertAdjacentHTML('beforeend','<option value="'+portalOrigin+'/mi-espacio">Mi espacio</option>'+apps.map(a=>'<option value="'+portalOrigin+esc(a.url)+'">'+esc(a.name)+'</option>').join(''));
   }).catch(()=>{});
 document.getElementById('moduleSelect').onchange=event=>{if(event.target.value)location.assign(event.target.value)};
 
