@@ -138,20 +138,36 @@ const dashboardHTML = `<!doctype html>
     main { padding:18px; grid-template-columns:1fr; }
     .alerts { margin-inline:18px; }
   }
+/* Navegación global compartida visualmente; copia local por frontend. */
+.portal-header-navigation { display: flex; flex: 0 1 auto; align-items: flex-end; gap: 10px; min-width: 0; }
+.portal-header-navigation .header-module-switcher { margin-right: 0; }
+.portal-dashboard-link { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; box-sizing: border-box; height: 34px; padding: 0 12px; border: 1px solid currentColor; border-radius: 9px; color: inherit; background: transparent; font-size: 12px; font-weight: 700; line-height: 1; text-decoration: none; white-space: nowrap; }
+.portal-dashboard-link:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+.portal-dashboard-link:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+@media (max-width: 767px) {
+  .portal-header-navigation { gap: 6px; }
+  .portal-header-navigation select { min-width: 0 !important; max-width: 100px !important; }
+  .portal-dashboard-link { padding-inline: 8px; }
+  .topbar:has(.portal-header-navigation), .portal-module-topbar:has(.portal-header-navigation) { gap: 6px; padding-inline: 10px; }
+  .topbar:has(.portal-header-navigation) > span:first-of-type, .portal-module-topbar:has(.portal-header-navigation) .portal-module-context { display: none; }
+  .topbar:has(.portal-header-navigation) .mobile-menu-button { margin-right: 0; }
+  .portal-module-topbar:has(.portal-header-navigation) .portal-module-actions { margin-left: auto; gap: 6px; }
+}
+
 </style>
 </head>
 <body>
 <div class="app-shell" id="appShell">
 <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Cerrar navegación"></button>
 <aside class="sidebar" aria-label="Navegación de Agent Core">
-  <div class="sidebar-brand"><div class="brand-row"><a class="brand-link" id="brandLink" href="/" title="Ir a MRTI Core" aria-label="Ir a MRTI Core"><span class="brand-mark"><img id="brandLogo" src="/portal-assets/company-logo.svg" alt=""></span><span class="brand-copy"><strong><span>MRTI</span><span class="brand-module">Agent Core</span></strong><small>Minera Río Tinto</small></span></a></div></div>
+  <div class="sidebar-brand"><div class="brand-row"><a class="brand-link" id="brandLink" href="/" title="Ir al home" aria-label="Ir al home"><span class="brand-mark"><img id="brandLogo" src="/portal-assets/company-logo.svg" alt=""></span><span class="brand-copy"><strong><span>MRTI</span><span class="brand-module">Agent Core</span></strong><small>Minera Río Tinto</small></span></a></div></div>
   <div class="sidebar-scroll">
     <nav class="sidebar-nav"><a class="active" href="/"><span class="nav-icon">⌂</span><span class="nav-label">Agentes</span></a><a href="/downloads/"><span class="nav-icon">↓</span><span class="nav-label">Descargar agente</span></a></nav>
   </div>
   <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button></div>
 </aside>
 <div class="workspace">
-<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><label class="header-module-switcher"><span>Cambiar módulo</span><select id="moduleSelect" aria-label="Cambiar de módulo"><option value="" selected disabled>MRTI Agent Core</option></select></label><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="/" data-portal-view="account" role="menuitem">○ Perfil</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></header>
+<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><nav class="portal-header-navigation" aria-label="Navegación de la plataforma"><a class="portal-dashboard-link" id="dashboardLink" href="/dashboard">Dashboard</a><label class="header-module-switcher"><span>Cambiar módulo</span><select id="moduleSelect" aria-label="Cambiar de módulo"><option value="" selected disabled>MRTI Agent Core</option></select></label></nav><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><span class="pill" id="pill">Cargando…</span><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="/" data-portal-view="account" role="menuitem">○ Perfil</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></header>
 <div class="alerts" id="alerts"></div>
 <main id="grid"><div class="empty">Esperando agentes…</div></main>
 </div></div>
@@ -173,7 +189,8 @@ if(hashTheme==='light'||hashTheme==='dark') localStorage.setItem('mrti_theme',ha
 if(hashToken){ sessionStorage.setItem('mrti_portal_token', hashToken); history.replaceState({}, '', '/'); }
 const portalToken = sessionStorage.getItem('mrti_portal_token');
 const portalOrigin = location.protocol+'//'+location.hostname;
-document.getElementById('brandLink').href = portalOrigin+'/mi-espacio';
+document.getElementById('dashboardLink').href=portalOrigin+'/dashboard';
+document.getElementById('brandLink').href = portalOrigin+'/';
 document.querySelectorAll('[data-portal-view]').forEach(a=>a.href=portalOrigin+'/?view='+a.dataset.portalView);
 if(!portalToken) location.replace(location.protocol+'//'+location.hostname+'/?returnTo='+encodeURIComponent('/agent-core/'));
 
@@ -254,7 +271,7 @@ fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer
   .then(r=>r.ok?r.json():Promise.reject())
   .then(({data})=>{
     const apps=(Array.isArray(data)?data:[]).filter(a=>a.code!=='agent-core');
-    document.getElementById('moduleSelect').insertAdjacentHTML('beforeend','<option value="'+portalOrigin+'/mi-espacio">Mi espacio</option>'+apps.map(a=>'<option value="'+portalOrigin+esc(a.url)+'">'+esc(a.name)+'</option>').join(''));
+    document.getElementById('moduleSelect').insertAdjacentHTML('beforeend',apps.map(a=>'<option value="'+portalOrigin+esc(a.url)+'">'+esc(a.name)+'</option>').join(''));
   }).catch(()=>{});
 document.getElementById('moduleSelect').onchange=event=>{if(event.target.value)location.assign(event.target.value)};
 
