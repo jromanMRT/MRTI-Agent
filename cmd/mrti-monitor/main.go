@@ -16,10 +16,42 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jromanMRT/mrti-agent/internal/model"
 )
+
+// basePathKey carries the external prefix ("" for direct :8477 access used by
+// telemetry agents and legacy bookmarks, "/agent-core" when reached through
+// nginx at the same origin as the rest of the platform) so the dashboard can
+// emit correctly prefixed self-references. It never touches the agent-facing
+// ingest/commands routes, which must keep working unprefixed on :8477.
+type basePathKeyType struct{}
+
+var basePathKey basePathKeyType
+
+// rootHandler wraps coreHandler so the exact same routes answer both at the
+// server's own root (unchanged — telemetry agents point their server.url
+// directly at :8477 and must never be affected by this) and, stripped, under
+// "/agent-core/" for nginx to reverse-proxy at the platform's main origin.
+func rootHandler(store *Store, apiKey, downloadsDir string) http.Handler {
+	inner := coreHandler(store, apiKey, downloadsDir)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		basePath := ""
+		path := r.URL.Path
+		if path == "/agent-core" || strings.HasPrefix(path, "/agent-core/") {
+			basePath = "/agent-core"
+			path = strings.TrimPrefix(path, "/agent-core")
+			if path == "" {
+				path = "/"
+			}
+		}
+		r2 := r.WithContext(context.WithValue(r.Context(), basePathKey, basePath))
+		r2.URL.Path = path
+		inner.ServeHTTP(w, r2)
+	})
+}
 
 func coreHandler(store *Store, apiKey, downloadsDir string) http.Handler {
 	srv := &server{store: store, apiKey: apiKey, downloadsDir: downloadsDir}

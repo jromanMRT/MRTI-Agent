@@ -143,7 +143,7 @@ func (p *coreProgram) Start(_ service.Service) error {
 	p.listener = listener
 	p.http = &http.Server{
 		Addr:              p.opts.addr,
-		Handler:           coreHandler(store, p.opts.apiKey, p.opts.downloadsDir),
+		Handler:           rootHandler(store, p.opts.apiKey, p.opts.downloadsDir),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	p.done = make(chan struct{})
