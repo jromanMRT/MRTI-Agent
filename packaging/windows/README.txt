@@ -7,7 +7,7 @@ Contents
   config.yaml           agent configuration — EDIT BEFORE INSTALLING
   plugins\ping.exe      example gRPC plugin (TCP latency probe)
   install-windows.ps1   installs the agent as a Windows service
-  install-core-windows.ps1 installs Core as a Windows service
+  install-monitor-windows.ps1 installs MRTI Monitor as a Windows service
 
 ------------------------------------------------------------------------
 QUICK START (agent)
@@ -38,7 +38,7 @@ OPTIONAL: run the Core server (dashboard + API) on this or another machine
 Persistent installation (recommended):
 1) Open PowerShell AS ADMINISTRATOR in this folder.
 2) Choose an API key and run:
-     .\install-core-windows.ps1 -ApiKey "replace-with-a-secure-key"
+     .\install-monitor-windows.ps1 -ApiKey "replace-with-a-secure-key"
 3) Check it:
      Get-Service mrti-monitor
 

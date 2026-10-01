@@ -36,7 +36,7 @@ package-windows: build-windows
 	cp dist/windows-amd64/plugins/ping.exe dist/mrti-agent-windows-amd64/plugins/
 	cp config.yaml.example dist/mrti-agent-windows-amd64/config.yaml
 	cp packaging/windows/install-windows.ps1 dist/mrti-agent-windows-amd64/install-windows.ps1
-	cp packaging/windows/install-core-windows.ps1 dist/mrti-agent-windows-amd64/install-core-windows.ps1
+	cp packaging/windows/install-monitor-windows.ps1 dist/mrti-agent-windows-amd64/install-monitor-windows.ps1
 	cp packaging/windows/README.txt dist/mrti-agent-windows-amd64/README.txt
 	cd dist && (command -v zip >/dev/null 2>&1 && zip -qr mrti-agent-windows-amd64.zip mrti-agent-windows-amd64 || python3 -c "import shutil;shutil.make_archive('mrti-agent-windows-amd64','zip','.','mrti-agent-windows-amd64')")
 	@echo "Package: dist/mrti-agent-windows-amd64.zip"

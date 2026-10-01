@@ -154,7 +154,7 @@ Get-Service mrti-agent
 The Windows package also installs Core as a background service, when needed:
 
 ```powershell
-.\install-core-windows.ps1 -ApiKey "replace-with-a-secure-key"
+.\install-monitor-windows.ps1 -ApiKey "replace-with-a-secure-key"
 Get-Service mrti-monitor
 ```
 
