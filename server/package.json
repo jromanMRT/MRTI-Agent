@@ -9,7 +9,8 @@
     "dev": "node --watch src/index.js",
     "migrate": "node scripts/migrate.js",
     "parity": "node scripts/parity-check.mjs",
-    "test": "node --test test/"
+    "test": "node --test test/",
+    "import:sqlite": "node scripts/import-sqlite.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
