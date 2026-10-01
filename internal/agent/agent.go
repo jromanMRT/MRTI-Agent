@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -533,6 +534,14 @@ func (a *Agent) applyConfig(cmd model.Command, res *model.CommandResult) {
 	}
 	newCfg.SetPath(a.cfg.Path())
 
+	// Security-sensitive sections stay as configured on this host unless its
+	// own config allows remote changes (see config.RemoteConfigPolicy).
+	kept := a.cfg.ProtectFromRemote(newCfg)
+	if len(kept) > 0 {
+		a.log.Warn("pushed config tried to change protected sections; kept local values",
+			"sections", strings.Join(kept, ","))
+	}
+
 	// Some changes can't be hot-applied without reconnecting/reworking the run
 	// loop; for those we persist and restart.
 	needRestart := !reflect.DeepEqual(a.cfg.Server, newCfg.Server) ||
@@ -558,6 +567,10 @@ func (a *Agent) applyConfig(cmd model.Command, res *model.CommandResult) {
 		a.pendingRestart = true
 	} else {
 		res.Output = "config applied live"
+	}
+	if len(kept) > 0 {
+		res.Output += "; kept local values for protected sections (change them in config.yaml on the host): " +
+			strings.Join(kept, ", ")
 	}
 }
 

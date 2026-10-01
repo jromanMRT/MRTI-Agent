@@ -1,7 +1,7 @@
 # MRTI Agent — build & tooling
 # Requires: Go 1.22+, protoc + protoc-gen-go + protoc-gen-go-grpc (for `make proto`)
 
-VERSION ?= 0.1.0-dev
+VERSION ?= 0.1.1
 LDFLAGS := -s -w -X github.com/jromanMRT/mrti-agent/internal/agent.Version=$(VERSION)
 PKG     := github.com/jromanMRT/mrti-agent
 BIN     := mrti-agent

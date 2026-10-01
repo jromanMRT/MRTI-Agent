@@ -78,6 +78,13 @@ alerts:
   temp_celsius: 80       # warn when the hottest sensor >= this (needs temperature module)
   ping_latency_ms: 500   # warn when a ping probe latency >= this (needs the ping plugin)
 
+remote_config:
+  # What a config pushed from the Core (set_config) may change. With this off
+  # (the default), server, scripts, update, plugins.dir, logging.dir and
+  # cache.path keep their local values even if the Core pushes others; edit
+  # them here on the host. This policy itself can never be changed remotely.
+  allow_security_changes: false
+
 update:
   # Verified agent self-update via an "update" command from the Core.
   # Disabled by default. When enabled, updates must pass a SHA-256 check and,

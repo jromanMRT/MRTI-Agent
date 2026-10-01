@@ -7,6 +7,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -25,9 +26,51 @@ type Config struct {
 	Alerts    AlertsConfig    `yaml:"alerts"`
 	Update    UpdateConfig    `yaml:"update"`
 
+	// RemoteConfig decides what a Core-pushed config (set_config) may change.
+	RemoteConfig RemoteConfigPolicy `yaml:"remote_config"`
+
 	// path remembers where this config was loaded from so it can be rewritten
 	// when the Core pushes updates.
 	path string `yaml:"-"`
+}
+
+// RemoteConfigPolicy limits what a config pushed from the Core can change.
+// The agent runs as a privileged service on every host, so a pushed config
+// that could switch on remote scripts, accept unsigned updates, repoint the
+// server or move the plugin/log/cache paths would turn one compromised Core
+// session into code execution across the whole fleet. By default those
+// sections only change by editing config.yaml on the host itself.
+type RemoteConfigPolicy struct {
+	// AllowSecurityChanges lets set_config change server, scripts, update,
+	// plugins.dir, logging.dir and cache.path. Off by default. This policy
+	// itself can never be changed remotely.
+	AllowSecurityChanges bool `yaml:"allow_security_changes"`
+}
+
+// ProtectFromRemote keeps the security-sensitive sections of the local
+// config c in pushed and returns the names of the sections the pushed config
+// tried to change (and that were therefore kept as they are locally). The
+// remote_config policy is always kept; the other sections are kept unless
+// the local policy allows security changes.
+func (c *Config) ProtectFromRemote(pushed *Config) []string {
+	var kept []string
+	keep := func(name string, differs bool, restore func()) {
+		if differs {
+			kept = append(kept, name)
+			restore()
+		}
+	}
+	keep("remote_config", !reflect.DeepEqual(c.RemoteConfig, pushed.RemoteConfig), func() { pushed.RemoteConfig = c.RemoteConfig })
+	if c.RemoteConfig.AllowSecurityChanges {
+		return kept
+	}
+	keep("server", !reflect.DeepEqual(c.Server, pushed.Server), func() { pushed.Server = c.Server })
+	keep("scripts", !reflect.DeepEqual(c.Scripts, pushed.Scripts), func() { pushed.Scripts = c.Scripts })
+	keep("update", !reflect.DeepEqual(c.Update, pushed.Update), func() { pushed.Update = c.Update })
+	keep("plugins.dir", c.Plugins.Dir != pushed.Plugins.Dir, func() { pushed.Plugins.Dir = c.Plugins.Dir })
+	keep("logging.dir", c.Logging.Dir != pushed.Logging.Dir, func() { pushed.Logging.Dir = c.Logging.Dir })
+	keep("cache.path", c.Cache.Path != pushed.Cache.Path, func() { pushed.Cache.Path = c.Cache.Path })
+	return kept
 }
 
 // UpdateConfig controls agent self-update. Updates are verified against a
