@@ -17,7 +17,7 @@ así que ningún equipo se reinstala.
 
 | Fase | Qué | Estado |
 |---|---|---|
-| 1 | Servidor Node con el mismo contrato que `cmd/mrti-monitor`, en paralelo y sin tráfico de agentes | Código y paridad listos; despliegue pendiente de la base `mrti_agent_core` |
+| 1 | Servidor Node con el mismo contrato que `cmd/mrti-monitor`, en paralelo y sin tráfico de agentes | Completa (2026-10-01) |
 | 2 | Copia de datos SQLite (`run/core.db`) → MySQL, idempotente y verificada por conteos | Pendiente |
 | 3 | Panel React igual a Activos/RH bajo `/agent-core/` (releases) | Pendiente |
 | 4 | Corte: nginx `/agent-core/` y los agentes (`server.url`) al servidor Node, con la misma `AGENT_API_KEY`; Go queda de respaldo | Pendiente |
@@ -70,6 +70,10 @@ comandos.
 - `npm run migrate` aplicado dos veces sobre la base de pruebas: la segunda
   no cambia nada.
 - `npm audit --omit=dev`: 0 vulnerabilidades.
+- Despliegue: base `mrti_agent_core` creada por jroman; migración aplicada dos
+  veces sin cambios; pm2 `mrti-agent-core-api` online y guardado; `/api/health`
+  200, rutas de operador sin sesión 401, sesión inválida (Core real) 401,
+  ingest sin llave 503, puerto no expuesto a la red; `health.mjs` saludable.
 
 ### Rollback
 
