@@ -15,8 +15,10 @@ plugins/*/*.bin
 # Local config with real credentials (keep config.yaml.example tracked)
 /config.yaml
 
-# Go
+# Go (dependencias vendorizadas). La copia del kit MRTI-Platform del
+# servidor Node sí se versiona, igual que en los demás módulos.
 vendor/
+!/server/src/vendor/
 *.test
 *.out
 
