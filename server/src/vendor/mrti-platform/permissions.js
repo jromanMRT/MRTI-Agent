@@ -1,4 +1,4 @@
-// GENERADO desde MRTI-Platform@7f88163 (src/permissions.js).
+// GENERADO desde MRTI-Platform@2d6505e (src/permissions.js).
 // No editar aquí: cambiar en MRTI-Platform y ejecutar bin/sync.mjs.
 // Contrato puro de permisos granulares. Core guarda políticas; los módulos
 // conservan sus reglas de negocio y el alcance por registro/empresa/equipo.
@@ -23,11 +23,11 @@ export const PERMISSION_CATALOG = [
     section('tools', 'Herramientas y compensaciones', ['compensation-'], ['herramientas','compensaciones','firmas-correo']),
   ] },
   { code: 'activos', name: 'Activos', base: '/activos', api: '/api', sections: [
-    section('dashboard', 'Dashboard', ['activos-suite/dashboard','activos-suite/summary'], ['']),
+    section('dashboard', 'Dashboard', ['activos-suite/dashboard','activos-suite/summary'], ['','operacion']),
     section('alerts', 'Alertas', ['activos-suite/alerts','activos-suite/license-notifications'], ['alertas']),
-    section('notes', 'Referencias técnicas', ['technical-notes','asset-knowledge'], ['referencias-tecnicas']),
+    section('notes', 'Referencias técnicas', ['technical-notes','asset-knowledge'], ['referencias-tecnicas','notas-tecnicas']),
     section('offboarding', 'Bajas de personal', ['activos/offboarding'], ['bajas-personal']),
-    section('catalogs', 'Catálogos operativos', ['activos-suite/resources','activos-suite/documents','activos-suite/unit-inventory'], ['catalogos','unidades']),
+    section('catalogs', 'Catálogos operativos', ['activos-suite/resources','activos-suite/documents','activos-suite/unit-inventory'], ['catalogos','inventario/unidades','unidades']),
     section('security', 'Seguridad y credenciales', ['activos-suite/antivirus-licenses','activos-suite/teamviewer','activos/[^/]+/remission-credentials','activos/[^/]+/remission-credential-status'], ['seguridad-acceso']),
     section('checklist', 'Checklist de equipos', ['activos-suite/setup-checklist'], ['checklist-equipos']),
     section('administration', 'Revisión de unidades y sincronización', ['activos-suite/unit-review','activos-suite/sync'], ['administracion']),
@@ -71,7 +71,7 @@ export const PERMISSION_CATALOG = [
   ] },
   { code: 'agent-core', name: 'Agent Core', base: '/agent-core', api: '/api/v1', sections: [
     section('commands', 'Comandos remotos', ['agents/[^/]+/commands','commands'], []),
-    section('agents', 'Agentes y telemetría', ['agents','alerts'], ['']),
+    section('agents', 'Agentes y telemetría', ['agents','alerts','export'], ['']),
   ] },
 ];
 export const canonicalModule = (code) => code === 'mrti-infra' ? 'mrti-obs' : code;
