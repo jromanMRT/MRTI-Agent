@@ -112,6 +112,10 @@ func (s *server) requirePortalAccess(next http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "authorization unavailable", http.StatusServiceUnavailable)
 			return
 		}
+		query := request.URL.Query()
+		query.Set("method", r.Method)
+		query.Set("path", r.URL.Path)
+		request.URL.RawQuery = query.Encode()
 		request.Header.Set("Authorization", r.Header.Get("Authorization"))
 		response, err := http.DefaultClient.Do(request)
 		if err != nil {

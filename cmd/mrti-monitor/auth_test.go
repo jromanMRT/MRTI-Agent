@@ -26,6 +26,9 @@ func TestPortalAccessPreservesAuthorityStatus(t *testing.T) {
 	for _, status := range []int{204, 401, 403, 404, 500, 503} {
 		t.Run(http.StatusText(status), func(t *testing.T) {
 			mockAuthClient(t, func(r *http.Request) (*http.Response, error) {
+				if r.URL.Query().Get("method") != "GET" || r.URL.Query().Get("path") != "/api/v1/agents" {
+					t.Fatal("method and path must reach the Core authority")
+				}
 				if r.Header.Get("Authorization") != "Bearer fixture" {
 					t.Fatal("authorization header was not forwarded")
 				}

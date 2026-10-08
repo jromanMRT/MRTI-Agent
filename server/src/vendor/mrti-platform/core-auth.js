@@ -1,4 +1,4 @@
-// GENERADO desde MRTI-Platform@363afc8 (src/core-auth.js).
+// GENERADO desde MRTI-Platform@7f88163 (src/core-auth.js).
 // No editar aquí: cambiar en MRTI-Platform y ejecutar bin/sync.mjs.
 // Validación de sesión contra MRTI Core para módulos consumidores.
 //
@@ -56,7 +56,9 @@ export function createCoreAuth({
         return res.status(401).json({ error: 'No autenticado' });
       }
       try {
-        const response = await callCore(route, authorization);
+        const query = code === moduleCode
+          ? `?${new URLSearchParams({ method: req.method || 'GET', path: (req.originalUrl || req.url || '/').split('?')[0] })}` : '';
+        const response = await callCore(route + query, authorization);
         if (response.status === 204) return next();
         if (response.status === 401) {
           return res.status(401).json({ error: 'No autenticado o sesión expirada' });
