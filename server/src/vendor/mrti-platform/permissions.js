@@ -20,6 +20,7 @@ export const PERMISSION_CATALOG = [
     section('work-plan', 'Plan de trabajo', ['work-plan'], ['plan-trabajo']),
     section('committee', 'Comité RH', ['committee'], ['comite-rh']),
     section('documents', 'Plantillas y documentos RH', ['documents'], ['documentos-rh']),
+    section('requisitions', 'Requisiciones de personal', ['requisitions'], ['requisiciones']),
     section('tools', 'Herramientas y compensaciones', ['compensation-'], ['herramientas','compensaciones','firmas-correo']),
   ] },
   { code: 'activos', name: 'Activos', base: '/activos', api: '/api', sections: [
