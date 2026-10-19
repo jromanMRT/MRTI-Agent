@@ -14,6 +14,9 @@ var portalLogo []byte
 //go:embed portal-assets/favicon.svg
 var portalFavicon []byte
 
+//go:embed portal-assets/mrti-logo.png
+var portalMRLogo []byte
+
 //go:embed portal-assets/big-shoulders-display-800.woff2
 var portalHeadingFont []byte
 
@@ -29,6 +32,8 @@ func portalAsset(w http.ResponseWriter, r *http.Request) {
 		content, contentType = portalLogo, "image/svg+xml"
 	case "favicon.svg":
 		content, contentType = portalFavicon, "image/svg+xml"
+	case "mrti-logo.png":
+		content, contentType = portalMRLogo, "image/png"
 	case "big-shoulders-display-800.woff2":
 		content, contentType = portalHeadingFont, "font/woff2"
 	case "ibm-plex-sans-400.woff2":

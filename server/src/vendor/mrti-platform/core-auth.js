@@ -1,4 +1,4 @@
-// GENERADO desde MRTI-Platform@7f88163 (src/core-auth.js).
+// GENERADO desde MRTI-Platform@8ce8362 (src/core-auth.js).
 // No editar aquí: cambiar en MRTI-Platform y ejecutar bin/sync.mjs.
 // Validación de sesión contra MRTI Core para módulos consumidores.
 //
@@ -82,7 +82,16 @@ export function createCoreAuth({
     if (!response.ok) throw new Error('Core no disponible');
     const body = await response.json();
     if (!body.profile?.id) throw new Error('Respuesta de identidad inválida');
-    return { id: body.profile.id, name: body.profile.full_name, email: body.profile.email, role: body.profile.role };
+    return {
+      id: body.profile.id,
+      name: body.profile.full_name,
+      email: body.profile.email,
+      role: body.profile.role,
+      ...(body.profile.is_active !== undefined ? { is_active: body.profile.is_active } : {}),
+      ...(body.profile.allowed_modules !== undefined ? { allowed_modules: body.profile.allowed_modules } : {}),
+      ...(body.profile.access_policy !== undefined ? { access_policy: body.profile.access_policy } : {}),
+      ...(body.profile.access_policy_version !== undefined ? { access_policy_version: body.profile.access_policy_version } : {}),
+    };
   }
 
   // Lecturas auxiliares (auditoría, atribución): best-effort, nunca lanza.

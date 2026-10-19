@@ -60,6 +60,9 @@ func TestDashboardEmitsBasePathAwareSelfReferences(t *testing.T) {
 	if !strings.Contains(direct.Body.String(), `src="/portal-assets/company-logo.svg"`) {
 		t.Fatal("direct access must reference /portal-assets/... unprefixed")
 	}
+	if !strings.Contains(direct.Body.String(), `href="/portal-assets/mrti-logo.png?v=20261013-0923"`) {
+		t.Fatal("direct access must use the MRT brand favicon")
+	}
 	if strings.Contains(direct.Body.String(), "/agent-core/portal-assets") {
 		t.Fatal("direct access must not leak the /agent-core prefix")
 	}
@@ -68,6 +71,9 @@ func TestDashboardEmitsBasePathAwareSelfReferences(t *testing.T) {
 	handler.ServeHTTP(proxied, httptest.NewRequest(http.MethodGet, "/agent-core/", nil))
 	if !strings.Contains(proxied.Body.String(), `src="/agent-core/portal-assets/company-logo.svg"`) {
 		t.Fatal("proxied access must reference /agent-core/portal-assets/...")
+	}
+	if !strings.Contains(proxied.Body.String(), `href="/agent-core/portal-assets/mrti-logo.png?v=20261013-0923"`) {
+		t.Fatal("proxied access must use the prefixed MRT brand favicon")
 	}
 	if !strings.Contains(proxied.Body.String(), `const AGENT_BASE = '/agent-core';`) {
 		t.Fatal("proxied access must set AGENT_BASE for its own API calls")
@@ -87,5 +93,36 @@ func TestRootHandlerServesPortalAssetsUnderPrefix(t *testing.T) {
 	}
 	if ct := response.Header().Get("Content-Type"); ct != "image/svg+xml" {
 		t.Fatalf("unexpected content-type: %s", ct)
+	}
+}
+
+func TestRootHandlerServesMRTLogoUnderPrefix(t *testing.T) {
+	handler := newTestRootHandler(t)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/agent-core/portal-assets/mrti-logo.png", nil))
+	if response.Code != http.StatusOK {
+		t.Fatalf("prefixed MRT logo: status=%d", response.Code)
+	}
+	if ct := response.Header().Get("Content-Type"); ct != "image/png" {
+		t.Fatalf("unexpected content-type: %s", ct)
+	}
+	if len(response.Body.Bytes()) == 0 {
+		t.Fatal("MRT logo response is empty")
+	}
+}
+
+func TestDownloadsPageUsesBasePathAwareBrandFavicon(t *testing.T) {
+	handler := newTestRootHandler(t)
+
+	direct := httptest.NewRecorder()
+	handler.ServeHTTP(direct, httptest.NewRequest(http.MethodGet, "/downloads/", nil))
+	if direct.Code != http.StatusOK || !strings.Contains(direct.Body.String(), `href="/portal-assets/mrti-logo.png?v=20261013-0923"`) {
+		t.Fatalf("direct downloads favicon missing: status=%d", direct.Code)
+	}
+
+	proxied := httptest.NewRecorder()
+	handler.ServeHTTP(proxied, httptest.NewRequest(http.MethodGet, "/agent-core/downloads/", nil))
+	if proxied.Code != http.StatusOK || !strings.Contains(proxied.Body.String(), `href="/agent-core/portal-assets/mrti-logo.png?v=20261013-0923"`) {
+		t.Fatalf("proxied downloads favicon missing: status=%d", proxied.Code)
 	}
 }

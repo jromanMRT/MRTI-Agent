@@ -1,10 +1,10 @@
-// GENERADO desde MRTI-Platform@2d6505e (src/permissions.js).
+// GENERADO desde MRTI-Platform@8ce8362 (src/permissions.js).
 // No editar aquí: cambiar en MRTI-Platform y ejecutar bin/sync.mjs.
 // Contrato puro de permisos granulares. Core guarda políticas; los módulos
 // conservan sus reglas de negocio y el alcance por registro/empresa/equipo.
 export const LEVELS = ['none', 'read', 'write', 'full'];
 export const LEVEL_LABELS = { none: 'Sin acceso', read: 'Sólo consulta', write: 'Consultar y editar', full: 'Gestión completa' };
-const section = (id, name, routes, pages = []) => ({ id, name, routes, pages });
+const section = (id, name, routes, pages = [], rules = []) => ({ id, name, routes, pages, rules });
 export const PERMISSION_CATALOG = [
   { code: 'rh', name: 'RH', base: '/rh', api: '/api/rh', sections: [
     section('dashboard', 'Resumen', ['dashboard'], ['']),
@@ -20,7 +20,11 @@ export const PERMISSION_CATALOG = [
     section('work-plan', 'Plan de trabajo', ['work-plan'], ['plan-trabajo']),
     section('committee', 'Comité RH', ['committee'], ['comite-rh']),
     section('documents', 'Plantillas y documentos RH', ['documents'], ['documentos-rh']),
-    section('requisitions', 'Requisiciones de personal', ['requisitions'], ['requisiciones']),
+    section('requisition_configuration', 'Requisiciones: configurar flujo', [], [], [{ methods:['GET','PATCH'], pattern:'^requisitions/approval-config(?:/|$)' }]),
+    section('requisition_decisions', 'Requisiciones: aprobar o rechazar', [], [], [{ methods:['PATCH'], pattern:'^requisitions/[^/]+/(?:approve|reject)$' }]),
+    section('requisition_management', 'Requisiciones: editar y administrar', [], [], [{ methods:['PATCH','DELETE'], pattern:'^requisitions/[^/]+(?:/(?:cancel|recruit|reactivate))?$' }]),
+    section('requisition_create', 'Requisiciones: crear', [], [], [{ methods:['POST'], pattern:'^requisitions$' }]),
+    section('requisitions', 'Requisiciones: consultar', ['requisitions'], ['requisiciones']),
     section('tools', 'Herramientas y compensaciones', ['compensation-'], ['herramientas','compensaciones','firmas-correo']),
   ] },
   { code: 'activos', name: 'Activos', base: '/activos', api: '/api', sections: [
@@ -76,7 +80,7 @@ export const PERMISSION_CATALOG = [
   ] },
 ];
 export const canonicalModule = (code) => code === 'mrti-infra' ? 'mrti-obs' : code;
-export function routeSection(code, url, browser = false) {
+export function routeSection(code, url, browser = false, method = 'GET') {
   const module = PERMISSION_CATALOG.find((m) => m.code === canonicalModule(code));
   if (!module) return null;
   let path;
@@ -84,6 +88,14 @@ export function routeSection(code, url, browser = false) {
   const base = browser ? module.base : module.api;
   if (path !== base && !path.startsWith(base + '/')) return null;
   path = path.slice(base.length).replace(/^\/+|\/+$/g, '');
+  if (!browser) {
+    const normalizedMethod = String(method || 'GET').toUpperCase();
+    for (const item of module.sections) {
+      for (const rule of item.rules || []) {
+        if ((!rule.methods || rule.methods.includes(normalizedMethod)) && new RegExp(rule.pattern).test(path)) return item.id;
+      }
+    }
+  }
   for (const item of module.sections) {
     for (const prefix of browser ? item.pages : item.routes) {
       if (prefix === '' ? path === '' : new RegExp(`^(?:${prefix})(?:/|$|(?<=[-_/]))`).test(path)) return item.id;
@@ -112,7 +124,8 @@ export function requestAllowed(profile, code, method, url) {
   const relative = module && path.slice(module.api.length);
   // Metadatos de sesión sin datos de negocio: permiten construir un menú acotado.
   if (['/me','/session','/catalog','/meta','/my-module-role','/physical-areas','/companies'].includes(relative) && ['GET','HEAD'].includes(method)) return profile?.allowed_modules?.includes(canonicalModule(code)) || profile?.role === 'administrator';
-  const level = permissionFor(profile, code, routeSection(code, url));
-  if (/\/(archive|restore|undelete|retire|delete|restricted-access|permissions|secret)(\/|$)/.test(path) && !['legacy','full'].includes(level)) return false;
+  const level = permissionFor(profile, code, routeSection(code, url, false, method));
+  if (/\/requisitions\/approval-config(?:\/|$)/.test(path) && !['legacy','full'].includes(level)) return false;
+  if (/\/(archive|restore|reactivate|undelete|retire|delete|restricted-access|permissions|secret)(\/|$)/.test(path) && !['legacy','full'].includes(level)) return false;
   return levelAllows(level, method);
 }

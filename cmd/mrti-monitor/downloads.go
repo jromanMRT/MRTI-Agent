@@ -40,7 +40,8 @@ func (s *server) downloadsPage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := downloadsTemplate.Execute(w, map[string]any{"Artifacts": artifacts}); err != nil {
+	basePath, _ := r.Context().Value(basePathKey).(string)
+	if err := downloadsTemplate.Execute(w, map[string]any{"Artifacts": artifacts, "BasePath": basePath}); err != nil {
 		http.Error(w, "could not render downloads page", http.StatusInternalServerError)
 	}
 }
@@ -90,6 +91,7 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" sizes="200x200" href="{{.BasePath}}/portal-assets/mrti-logo.png?v=20261013-0923">
 <title>Descargar MRTI Agent</title>
 <style>
   @font-face { font-family:"Big Shoulders Display"; font-style:normal; font-weight:700 800; font-display:swap; src:url("/portal-assets/big-shoulders-display-800.woff2") format("woff2"); }
@@ -123,7 +125,6 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
   .sidebar-action,.mobile-menu { display:grid; width:36px; height:36px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--accent); background:var(--card); cursor:pointer; }
   .workspace { min-width:0; }
   .topbar { position:sticky; z-index:20; top:0; display:flex; min-height:72px; align-items:center; gap:16px; padding:0 24px; border-bottom:1px solid var(--border); background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(12px); }
-  .topbar-context { display:grid; margin-right:auto; }
   .header-module-switcher { display:grid; flex:0 0 auto; gap:2px; }
   .header-module-switcher > span { color:var(--muted); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
   .header-module-switcher select { min-width:150px; max-width:210px; height:34px; padding:0 30px 0 10px; border:1px solid var(--border); border-radius:9px; color:var(--fg); background:var(--card); font-size:12px; font-weight:700; cursor:pointer; }
@@ -157,7 +158,7 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
   .button:hover { filter:brightness(1.1); transform:translateY(-1px); }
   .missing { background:#223044; color:#a3b1c2; cursor:not-allowed; }
   footer { text-align:center; color:var(--muted); padding:0 24px 38px; }
-  @media(max-width:800px){ .shell{display:block}.sidebar{position:fixed;left:0;width:min(280px,calc(100vw - 42px));transform:translateX(-105%);transition:transform 200ms ease}.shell.mobile-open .sidebar{transform:translateX(0)}.mobile-open .backdrop{display:block;position:fixed;z-index:35;inset:0;border:0;background:rgba(0,0,0,.54)}.mobile-menu{display:grid;border-radius:10px}.header-module-switcher>span{display:none}.header-module-switcher select{min-width:0;max-width:132px}.topbar-context{display:none}.account-identity{display:none}main{grid-template-columns:1fr}.hero{margin-top:25px} }
+  @media(max-width:900px){ .shell{display:block}.sidebar{position:fixed;left:0;width:min(280px,calc(100vw - 42px));transform:translateX(-105%);transition:transform 200ms ease}.shell.mobile-open .sidebar{transform:translateX(0)}.mobile-open .backdrop{display:block;position:fixed;z-index:35;inset:0;border:0;background:rgba(0,0,0,.54)}.mobile-menu{display:grid;border-radius:10px}.header-module-switcher>span{display:none}.header-module-switcher select{min-width:0;max-width:132px}.account-identity{display:none}main{grid-template-columns:1fr}.hero{margin-top:25px} }
 /* Navegación global compartida visualmente; copia local por frontend. */
 .portal-header-navigation { display: flex; flex: 0 1 auto; align-items: flex-end; gap: 10px; min-width: 0; }
 .portal-header-navigation .header-module-switcher { margin-right: 0; }
@@ -169,17 +170,18 @@ var downloadsTemplate = template.Must(template.New("downloads").Parse(`<!doctype
   .portal-header-navigation select { min-width: 0 !important; max-width: 100px !important; }
   .portal-dashboard-link { padding-inline: 8px; }
   .topbar:has(.portal-header-navigation), .portal-module-topbar:has(.portal-header-navigation) { gap: 6px; padding-inline: 10px; }
-  .topbar:has(.portal-header-navigation) > span:first-of-type, .portal-module-topbar:has(.portal-header-navigation) .portal-module-context { display: none; }
   .topbar:has(.portal-header-navigation) .mobile-menu-button { margin-right: 0; }
   .portal-module-topbar:has(.portal-header-navigation) .portal-module-actions { margin-left: auto; gap: 6px; }
 }
 
+
+@media(max-width:1200px){.topbar .account-identity{display:none}.topbar{gap:8px}.topbar .module-tabs{min-width:0;flex:0 1 auto;overflow-x:auto}.topbar .account-menu,.topbar .notification-center,.topbar .mobile-menu{flex-shrink:0}}
 </style>
 </head>
 <body><div class="shell" id="appShell">
 <button class="backdrop" id="backdrop" type="button" aria-label="Cerrar navegación"></button>
 <aside class="sidebar"><div class="brand"><a class="brand-home" id="brandLink" href="/" title="Ir al home" aria-label="Ir al home"><span class="brand-mark"><img id="brandLogo" src="/portal-assets/company-logo.svg" alt=""></span><span class="brand-copy"><strong><span>MRTI</span><span class="brand-module">Agent Core</span></strong><small>Minera Río Tinto</small></span></a></div><nav><a href="/">⌂ <span>Agentes</span></a><a class="active" href="/downloads/">↓ <span>Descargar agente</span></a></nav><div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button></div></aside>
-<div class="workspace"><div class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><nav class="portal-header-navigation" aria-label="Navegación de la plataforma"><a class="portal-dashboard-link" id="dashboardLink" href="/dashboard">Dashboard</a><label class="header-module-switcher"><span>Cambiar módulo</span><select id="moduleSelect" aria-label="Cambiar de módulo"><option value="" selected disabled>MRTI Agent Core</option></select></label></nav><span class="topbar-context"><strong>Centro de descargas</strong><small>MRTI Agent Core</small></span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones">♢<span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" hidden><header><strong>Notificaciones</strong><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList"><p>Buscando novedades…</p></div></section></div><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="#" id="profileLink" role="menuitem">○ Perfil</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></div>
+<div class="workspace"><div class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><nav class="portal-header-navigation" aria-label="Navegación de la plataforma"><a class="portal-dashboard-link" id="dashboardLink" href="/dashboard">Dashboard</a><label class="header-module-switcher"><span>Cambiar módulo</span><select id="moduleSelect" aria-label="Cambiar de módulo"><option value="" selected disabled>MRTI Agent Core</option></select></label></nav><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones">♢<span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" hidden><header><strong>Notificaciones</strong><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList"><p>Buscando novedades…</p></div></section></div><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="#" id="profileLink" role="menuitem">○ Perfil</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></div>
 <header class="hero">
   <div class="eyebrow">Monitoreo sin interrupciones</div>
   <h1>Instala MRTI Agent</h1>

@@ -21,7 +21,7 @@ const dashboardHTML = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" type="image/svg+xml" href="__AGENT_BASE__/portal-assets/favicon.svg" />
+<link rel="icon" type="image/png" sizes="200x200" href="__AGENT_BASE__/portal-assets/mrti-logo.png?v=20261013-0923" />
 <title>MRTI | Agent Core</title>
 <style>
   @font-face { font-family:"Big Shoulders Display"; font-style:normal; font-weight:700 800; font-display:swap; src:url("__AGENT_BASE__/portal-assets/big-shoulders-display-800.woff2") format("woff2"); }
@@ -68,8 +68,7 @@ const dashboardHTML = `<!doctype html>
   .page-footer { display:flex; min-height:72px; align-items:center; gap:12px; padding:0 24px; border-top:1px solid var(--border); color:var(--faint); font-size:.7rem; letter-spacing:.035em; }
   .footer-separator { width:3px; height:3px; border-radius:50%; background:var(--faint); }
   .topbar { position:sticky; z-index:25; top:0; display:flex; min-height:72px; align-items:center; gap:16px; padding:0 24px; border-bottom:1px solid var(--border); background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(12px); }
-  .topbar-context { display:grid; }
-  .topbar-context small,.pill { color:var(--faint); font-size:12px; }
+  .pill { color:var(--faint); font-size:12px; }
   .pill { margin-left:0; }
   .notification-center { position:relative; }
   .notification-button { position:relative; display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:50%; color:var(--accent-deep); background:var(--card); cursor:pointer; }
@@ -140,7 +139,7 @@ const dashboardHTML = `<!doctype html>
   dialog pre { margin:0; padding:16px 24px; overflow:auto; max-height:70vh; font-size:12px; }
   dialog .x { margin-left:auto; cursor:pointer; color:var(--muted); background:none; border:0; font-size:18px; }
   a { color:var(--accent); }
-  @media(max-width:820px){
+  @media(max-width:900px){
     .app-shell,.app-shell.collapsed { display:block; }
     .sidebar,.collapsed .sidebar { position:fixed; width:min(280px,calc(100vw - 42px)); padding:18px 14px; transform:translateX(-105%); transition:transform 200ms ease; }
     .mobile-open .sidebar { transform:translateX(0); box-shadow:0 24px 70px rgba(0,0,0,.32); }
@@ -150,7 +149,6 @@ const dashboardHTML = `<!doctype html>
     .collapse-action { display:none; }
     .mobile-menu { display:grid; width:38px; height:38px; place-items:center; border:1px solid var(--border); border-radius:10px; color:var(--accent-deep); background:var(--card); }
     .module-tabs { max-width:46vw; }
-    .topbar-context { display:none; }
     .account-identity { display:none; }
     .sidebar-backdrop { position:fixed; z-index:35; inset:0; border:0; background:rgba(0,0,0,.54); }
     .mobile-open .sidebar-backdrop { display:block; }
@@ -173,11 +171,12 @@ const dashboardHTML = `<!doctype html>
 @media (max-width: 767px) {
   .portal-header-navigation { gap: 6px; }
   .topbar:has(.portal-header-navigation), .portal-module-topbar:has(.portal-header-navigation) { gap: 6px; padding-inline: 10px; }
-  .topbar:has(.portal-header-navigation) > span:first-of-type, .portal-module-topbar:has(.portal-header-navigation) .portal-module-context { display: none; }
   .topbar:has(.portal-header-navigation) .mobile-menu-button { margin-right: 0; }
   .portal-module-topbar:has(.portal-header-navigation) .portal-module-actions { margin-left: auto; gap: 6px; }
 }
 
+
+@media(max-width:1200px){.topbar .account-identity{display:none}.topbar{gap:8px}.topbar .module-tabs{min-width:0;flex:0 1 auto;overflow-x:auto}.topbar .account-menu,.topbar .notification-center,.topbar .mobile-menu{flex-shrink:0}}
 </style>
 </head>
 <body>
@@ -191,7 +190,7 @@ const dashboardHTML = `<!doctype html>
   <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button></div>
 </aside>
 <div class="workspace">
-<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><nav class="portal-header-navigation module-tabs" id="moduleTabsNav" aria-label="Navegación de la plataforma"><a class="module-tab" id="dashboardLink" href="/dashboard">Dashboard</a><a class="module-tab is-current" aria-current="page">Agent Core</a></nav><span class="topbar-context"><strong>Agent Core</strong><small>Supervisión de agentes</small></span><span class="pill" id="pill">Actualizando…</span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="/" data-portal-view="account" role="menuitem">○ Perfil</a><a href="/" data-portal-view="brand-assets" role="menuitem">◆ Recursos de marca</a><a href="/" data-portal-view="company-news" role="menuitem">▤ Noticias</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></header>
+<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><nav class="portal-header-navigation module-tabs" id="moduleTabsNav" aria-label="Navegación de la plataforma"><a class="module-tab" id="dashboardLink" href="/dashboard">Dashboard</a><a class="module-tab is-current" aria-current="page">Agent Core</a></nav><span class="pill" id="pill">Actualizando…</span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="/" data-portal-view="account" role="menuitem">○ Perfil</a><a href="/" data-portal-view="brand-assets" role="menuitem">◆ Recursos de marca</a><a href="/" data-portal-view="company-news" role="menuitem">▤ Noticias</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></header>
 <main class="dashboard-content">
   <section class="page-heading"><div><p class="eyebrow">MRTI Agent Core</p><h1>Supervisión de agentes</h1><p>Estado operativo de los equipos que reportan telemetría, consumo del agente y alertas recientes.</p></div></section>
   <section class="metrics" aria-label="Resumen operativo"><article class="metric"><span>Agentes registrados</span><strong id="metricTotal">—</strong><small>Equipos activos en inventario</small></article><article class="metric"><span>En línea</span><strong id="metricOnline">—</strong><small>Reportando actualmente</small></article><article class="metric"><span>Sin conexión</span><strong id="metricOffline">—</strong><small>Requieren revisión</small></article><article class="metric"><span>Alertas recientes</span><strong id="metricAlerts">—</strong><small>Últimos eventos recibidos</small></article></section>
