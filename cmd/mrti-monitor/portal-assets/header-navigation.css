@@ -1,0 +1,147 @@
+/* Marca MRTI en el topbar: logo + nombre, siempre visible. */
+.portal-topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  flex-shrink: 0;
+}
+.portal-topbar-brand-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(169, 120, 31, 0.3);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(217, 166, 60, 0.16), rgba(169, 120, 31, 0.06));
+}
+.portal-topbar-brand-mark img { width: 28px; height: 28px; }
+.portal-topbar-brand-copy { display: grid; gap: 0; line-height: 1.2; }
+.portal-topbar-brand-copy strong {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-family: 'Big Shoulders Display', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: .92rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.portal-topbar-brand-copy .brand-module { color: var(--gold-deep); font-size: .78em; letter-spacing: .04em; }
+.portal-topbar-brand-copy small { color: var(--ink-faint); font-size: .62rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+@media (max-width: 900px) {
+  .portal-topbar-brand-copy { display: none; }
+}
+
+/* Navegación global compartida visualmente. */
+.portal-header-navigation { display: flex; flex: 0 1 auto; align-items: center; gap: 10px; min-width: 0; }
+
+/* Pestañas de módulos: visibles siempre en el encabezado, sin abrir nada. */
+.module-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+/* Encabezado adaptable: navegación desplazable y controles sin superposición. */
+.topbar:has(.portal-header-navigation), .portal-module-topbar { gap:12px; min-width:0; }
+.portal-header-navigation.module-tabs { flex:0 1 auto; min-width:0; }
+.topbar-context, .portal-module-context { min-width:0; }
+.topbar-context strong, .topbar-context small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.topbar-actions, .portal-module-actions { flex-shrink:0; margin-left:auto; }
+@media (max-width:1200px) {
+  .topbar .topbar-context, .portal-module-topbar .portal-module-context { display:none; }
+  .topbar .session-user, .portal-module-topbar .portal-account-identity { display:none; }
+  .portal-module-topbar { padding-inline:16px; }
+}
+@media (max-width:900px) {
+  .portal-module-topbar .portal-module-menu { display:grid; flex:0 0 38px; }
+  .portal-header-navigation.module-tabs { max-width:calc(100vw - 180px); }
+  .portal-module-topbar { gap:8px; padding-inline:12px; }
+}
+@media (max-width:359px) {
+  .portal-module-topbar { flex-wrap:wrap; padding-block:8px; }
+}
+.module-tabs::-webkit-scrollbar { display: none; }
+.module-tab {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  background: transparent;
+  font-size: .74rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease;
+}
+.module-tab:hover { color: var(--ink); background: var(--surface-soft); }
+.module-tab.is-current { color: var(--gold-deep); background: color-mix(in srgb, var(--gold) 14%, transparent); font-weight: 800; box-shadow: inset 0 -2px var(--gold); }
+.module-tab.is-current:hover { background: color-mix(in srgb, var(--gold) 14%, transparent); }
+@media (max-width: 767px) {
+  .portal-header-navigation { gap: 6px; }
+  .topbar:has(.portal-header-navigation), .portal-module-topbar:has(.portal-header-navigation) { gap: 6px; padding-inline: 10px; }
+  .topbar:has(.portal-header-navigation) > span:first-of-type, .portal-module-topbar:has(.portal-header-navigation) .portal-module-context { display: none; }
+  .topbar:has(.portal-header-navigation) .mobile-menu-button { margin-right: 0; }
+  .portal-module-topbar:has(.portal-header-navigation) .portal-module-actions { margin-left: auto; gap: 6px; }
+  .module-tabs { max-width: 46vw; }
+}
+.portal-header-navigation:has(.module-tabs) { flex-shrink: 1; min-width: 0; }
+@media (max-width: 767px) {
+  header:has(.portal-header-navigation) > .h-full { padding-inline: 10px; gap: 6px; }
+  header:has(.portal-header-navigation) > .h-full > .min-w-0 { gap: 6px; }
+}
+@media (max-width: 359px) {
+  .topbar:has(.portal-header-navigation), .portal-module-topbar:has(.portal-header-navigation) { flex-wrap: wrap; padding-block: 8px; row-gap: 8px; }
+  .topbar:has(.portal-header-navigation) .session-controls, .topbar:has(.portal-header-navigation) .topbar-actions { margin-left: auto; }
+  header:has(> .h-full .portal-header-navigation) { height: auto; min-height: 72px; }
+  header:has(.portal-header-navigation) > .h-full { flex-wrap: wrap; padding-block: 8px; }
+  header:has(.portal-header-navigation) > .h-full > :last-child { margin-left: auto; }
+}
+
+/* Contrato global: gana sobre ajustes locales de densidad y de cada módulo. */
+.mrti-global-header.mrti-global-header.mrti-global-header {
+  position: sticky; top: 0; z-index: 25; box-sizing: border-box;
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 12px;
+  height: 72px; min-height: 72px; max-height: 72px; width: var(--header-width, 100%); min-width: 0;
+  margin: 0; margin-inline: var(--header-margin, 0); padding: 0 24px; border: 0; border-bottom: 1px solid var(--header-line, var(--line, var(--border)));
+  color: var(--header-ink, var(--ink, var(--fg))); background: var(--header-bg, var(--bg)); backdrop-filter: none;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+.mrti-global-header .mrti-header-inner { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; height: 100%; }
+.mrti-global-header .mrti-header-navigation { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.mrti-global-header .portal-header-navigation.module-tabs {
+  display: flex; flex: 1 1 0%; align-items: center; gap: 4px;
+  min-width: 0; max-width: none; width: auto; margin: 0; padding: 2px;
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.mrti-global-header .module-tab {
+  flex: 0 0 auto; padding: 8px 12px; border: 0; border-radius: 8px;
+  font-family: inherit; font-size: 12px; line-height: 20px; font-weight: 700;
+  text-decoration: none; white-space: nowrap; color: var(--header-muted, var(--ink-soft, var(--muted))); background: transparent;
+}
+.mrti-global-header .module-tab:hover { color: var(--header-ink, var(--ink, var(--fg))); background: var(--header-surface, var(--surface-soft, var(--card))); }
+.mrti-global-header .module-tab.is-current { color: var(--header-accent, var(--gold-deep, var(--accent))); background: color-mix(in srgb, var(--header-gold, var(--gold, var(--accent))) 14%, transparent); box-shadow: inset 0 -2px var(--header-gold, var(--gold, var(--accent))); }
+.mrti-global-header :is(.topbar-actions, .portal-module-actions, .session-controls) { display: flex; flex: 0 0 auto; align-items: center; gap: 14px; margin-left: auto; }
+.mrti-global-header :is(.notification-center, .portal-module-notifications, .account-menu, .portal-account-menu) { flex-shrink: 0; }
+.mrti-global-header :is(.notification-button, .portal-module-notification, .portal-module-notifications > button) {
+  display: grid; place-items: center; position: relative; width: 38px; height: 38px; padding: 0;
+  border: 1px solid var(--header-line, var(--line, var(--border))); border-radius: 50%; background: var(--header-surface, var(--surface, var(--card))); color: var(--header-accent, var(--gold-deep, var(--accent)));
+}
+.mrti-global-header :is(.notification-button, .portal-module-notification, .portal-module-notifications > button) svg { width: 20px; height: 20px; }
+.mrti-global-header :is(.session-profile, .portal-module-profile, .account-trigger) { display: flex; align-items: center; gap: 9px; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; }
+.mrti-global-header :is(.portal-module-avatar, .account-avatar, .session-avatar) { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border: 1px solid var(--header-line, var(--line, var(--border))); border-radius: 50%; background: var(--header-surface, var(--surface, var(--card))); color: var(--header-accent, var(--gold-deep, var(--accent))); font-size: 11px; font-weight: 800; }
+.mrti-global-header :is(.session-user, .portal-account-identity, .account-identity) { display: grid; line-height: 1.3; }
+.mrti-global-header :is(.session-user, .portal-account-identity, .account-identity) > :first-child { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 700; }
+.mrti-global-header :is(.session-user, .portal-account-identity, .account-identity) > :last-child { color: var(--header-muted, var(--ink-faint, var(--muted))); font-size: 10px; }
+.mrti-global-header :is(a, button):focus-visible { outline: 2px solid var(--header-accent, var(--gold-deep, var(--accent))); outline-offset: 2px; }
+@media (max-width: 1200px) {
+  .mrti-global-header :is(.session-user, .portal-account-identity, .account-identity) { display: none; }
+}
+@media (max-width: 900px) {
+  .mrti-global-header.mrti-global-header.mrti-global-header { padding-inline: 12px; gap: 8px; }
+  .mrti-global-header :is(.portal-module-menu, .mobile-menu, .mobile-menu-button) { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; margin: 0; }
+  .mrti-global-header :is(.mrti-header-inner, .mrti-header-navigation) { gap: 8px; }
+  .mrti-global-header :is(.topbar-actions, .portal-module-actions, .session-controls) { gap: 8px; }
+}

@@ -23,6 +23,9 @@ var portalHeadingFont []byte
 //go:embed portal-assets/ibm-plex-sans-400.woff2
 var portalBodyFont []byte
 
+//go:embed portal-assets/header-navigation.css
+var portalHeaderCSS string
+
 func portalAsset(w http.ResponseWriter, r *http.Request) {
 	var content []byte
 	var contentType string

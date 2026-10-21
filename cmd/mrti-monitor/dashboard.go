@@ -16,7 +16,7 @@ func (s *server) dashboard(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(html))
 }
 
-const dashboardHTML = `<!doctype html>
+var dashboardHTML = `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -177,6 +177,7 @@ const dashboardHTML = `<!doctype html>
 
 
 @media(max-width:1200px){.topbar .account-identity{display:none}.topbar{gap:8px}.topbar .module-tabs{min-width:0;flex:0 1 auto;overflow-x:auto}.topbar .account-menu,.topbar .notification-center,.topbar .mobile-menu{flex-shrink:0}}
+` + portalHeaderCSS + `
 </style>
 </head>
 <body>
@@ -190,7 +191,8 @@ const dashboardHTML = `<!doctype html>
   <div class="sidebar-footer"><button class="sidebar-action" id="themeAction" type="button" title="Cambiar tema">◐</button><button class="sidebar-action collapse-action" id="collapseAction" type="button" title="Colapsar menú">«</button></div>
 </aside>
 <div class="workspace">
-<header class="topbar"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><nav class="portal-header-navigation module-tabs" id="moduleTabsNav" aria-label="Navegación de la plataforma"><a class="module-tab" id="dashboardLink" href="/dashboard">Dashboard</a><a class="module-tab is-current" aria-current="page">Agent Core</a></nav><span class="pill" id="pill">Actualizando…</span><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="/" data-portal-view="account" role="menuitem">○ Perfil</a><a href="/" data-portal-view="brand-assets" role="menuitem">◆ Recursos de marca</a><a href="/" data-portal-view="company-news" role="menuitem">▤ Noticias</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></header>
+<header class="topbar mrti-global-header"><button class="mobile-menu" id="mobileMenu" type="button" aria-label="Abrir navegación">☰</button><nav class="portal-header-navigation module-tabs" id="moduleTabsNav" aria-label="Navegación de la plataforma"><a class="module-tab" id="dashboardLink" href="/dashboard">Dashboard</a></nav><div class="notification-center" id="notificationCenter"><button class="notification-button" id="notificationButton" type="button" aria-label="Ver notificaciones" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="notification-count" id="notificationCount" hidden></span></button><section class="notification-panel" id="notificationPanel" aria-label="Notificaciones" hidden><header><div><small>Novedades</small><strong>Notificaciones</strong></div><button id="notificationClose" type="button" aria-label="Cerrar notificaciones">×</button></header><div class="notification-list" id="notificationList" aria-live="polite"><p>Buscando novedades…</p></div></section></div><div class="account-menu" id="accountMenu"><button class="account-trigger" id="accountTrigger" type="button" aria-label="Abrir menú de usuario" aria-expanded="false"><span class="account-avatar" id="accountAvatar">U</span><span class="account-identity"><strong id="accountName">Usuario</strong><small id="accountRole">Sesión activa</small></span><span class="account-chevron">⌄</span></button><div class="account-panel" id="accountPanel" role="menu" hidden><a href="/" data-portal-view="account" role="menuitem">○ Perfil</a><a href="/" data-portal-view="brand-assets" role="menuitem">◆ Recursos de marca</a><a href="/" data-portal-view="company-news" role="menuitem">▤ Noticias</a><span id="adminAccountLinks"></span><button class="account-logout" id="logoutAction" type="button" role="menuitem">↪ Cerrar sesión</button></div></div></header>
+<div style="padding:12px 24px"><span class="pill" id="pill">Actualizando…</span></div>
 <main class="dashboard-content">
   <section class="page-heading"><div><p class="eyebrow">MRTI Agent Core</p><h1>Supervisión de agentes</h1><p>Estado operativo de los equipos que reportan telemetría, consumo del agente y alertas recientes.</p></div></section>
   <section class="metrics" aria-label="Resumen operativo"><article class="metric"><span>Agentes registrados</span><strong id="metricTotal">—</strong><small>Equipos activos en inventario</small></article><article class="metric"><span>En línea</span><strong id="metricOnline">—</strong><small>Reportando actualmente</small></article><article class="metric"><span>Sin conexión</span><strong id="metricOffline">—</strong><small>Requieren revisión</small></article><article class="metric"><span>Alertas recientes</span><strong id="metricAlerts">—</strong><small>Últimos eventos recibidos</small></article></section>
@@ -308,8 +310,8 @@ fetch(portalOrigin+'/api/auth/profile/preferences',{headers:{Authorization:'Bear
 fetch(portalOrigin+'/api/portal/v1/applications',{headers:{Authorization:'Bearer '+portalToken}})
   .then(r=>r.ok?r.json():Promise.reject())
   .then(({data})=>{
-    const apps=(Array.isArray(data)?data:[]).filter(a=>a.code!=='agent-core');
-    document.getElementById('moduleTabsNav').insertAdjacentHTML('beforeend',apps.map(a=>'<a class="module-tab" href="'+portalOrigin+esc(a.url)+'">'+esc(a.name.replace(/^MRTI\s*/i,''))+'</a>').join(''));
+    const apps=Array.isArray(data)?data:[];
+    document.getElementById('moduleTabsNav').insertAdjacentHTML('beforeend',apps.map(a=>'<a class="module-tab'+(a.code==='agent-core'?' is-current':'')+'"'+(a.code==='agent-core'?' aria-current="page"':'')+' href="'+(a.code==='agent-core'?'__AGENT_BASE__/':portalOrigin+esc(a.url))+'">'+esc(a.name.replace(/^MRTI\s*/i,''))+'</a>').join(''));
   }).catch(()=>{});
 
 fetch(portalOrigin+'/api/auth/me',{headers:{Authorization:'Bearer '+portalToken}}).then(r=>r.ok?r.json():Promise.reject()).then(({profile})=>{const name=profile?.full_name||'Usuario';document.getElementById('accountName').textContent=name;document.getElementById('accountRole').textContent=profile?.role||'Sesión activa';document.getElementById('accountAvatar').textContent=name.split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase()||'U';if(profile?.role==='administrator')document.getElementById('adminAccountLinks').innerHTML='<a href="'+portalOrigin+'/?view=control-center" role="menuitem">⚙ Centro de control</a>'}).catch(()=>{});
