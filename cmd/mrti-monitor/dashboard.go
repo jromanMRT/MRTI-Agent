@@ -234,10 +234,10 @@ const storedTheme = localStorage.getItem('mrti_theme');
 if(storedTheme==='dark'||storedTheme==='light') document.documentElement.dataset.theme=storedTheme;
 else if(matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme='dark';
 document.getElementById('footerYear').textContent = '© '+new Date().getFullYear()+' MRTI';
-if(localStorage.getItem('mrti_agent_sidebar_collapsed')==='1') appShell.classList.add('collapsed');
+if(localStorage.getItem('mrti_sidebar_collapsed')==='1') appShell.classList.add('collapsed');
 document.getElementById('collapseAction').addEventListener('click',()=>{
   const collapsed=appShell.classList.toggle('collapsed');
-  localStorage.setItem('mrti_agent_sidebar_collapsed',collapsed?'1':'0');
+  localStorage.setItem('mrti_sidebar_collapsed',collapsed?'1':'0');
   document.getElementById('collapseAction').textContent=collapsed?'»':'«';
 });
 document.getElementById('themeAction').addEventListener('click',()=>{
