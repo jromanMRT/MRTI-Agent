@@ -234,7 +234,16 @@ const storedTheme = localStorage.getItem('mrti_theme');
 if(storedTheme==='dark'||storedTheme==='light') document.documentElement.dataset.theme=storedTheme;
 else if(matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme='dark';
 document.getElementById('footerYear').textContent = '© '+new Date().getFullYear()+' MRTI';
-if(localStorage.getItem('mrti_sidebar_collapsed')==='1') appShell.classList.add('collapsed');
+function syncSidebarPreference(){
+  const collapsed=localStorage.getItem('mrti_sidebar_collapsed')==='1';
+  appShell.classList.toggle('collapsed',collapsed);
+  const button=document.getElementById('collapseAction');
+  button.textContent=collapsed?'»':'«';
+  button.title=collapsed?'Expandir menú':'Colapsar menú';
+}
+syncSidebarPreference();
+for(const event of ['storage','focus','pageshow']) window.addEventListener(event,syncSidebarPreference);
+document.addEventListener('visibilitychange',syncSidebarPreference);
 document.getElementById('collapseAction').addEventListener('click',()=>{
   const collapsed=appShell.classList.toggle('collapsed');
   localStorage.setItem('mrti_sidebar_collapsed',collapsed?'1':'0');
