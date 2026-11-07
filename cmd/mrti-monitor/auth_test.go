@@ -88,3 +88,36 @@ func TestPortalAccessRespectsEarlierClientDeadline(t *testing.T) {
 		t.Fatalf("cancellation status=%d", response.Code)
 	}
 }
+
+func TestAgentCredentialsFailClosedBeforeConsumingCommands(t *testing.T) {
+	for _, key := range []string{"", "configured-key"} {
+		for _, supplied := range []string{"", "wrong", "configured-key"} {
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/agents/fixture/commands", nil)
+			req.Header.Set("X-MRTI-API-Key", supplied)
+			response := httptest.NewRecorder()
+			called := false
+			(&server{apiKey: key}).requireOperatorKey(func(w http.ResponseWriter, r *http.Request) { called = true; w.WriteHeader(204) })(response, req)
+			allowed := key != "" && key == supplied
+			if called != allowed {
+				t.Fatalf("key validation called=%v allowed=%v", called, allowed)
+			}
+			if !allowed && response.Code != 401 {
+				t.Fatalf("expected 401, got %d", response.Code)
+			}
+		}
+	}
+}
+
+func TestPublicRoutesCannotReachCommandsOrMetrics(t *testing.T) {
+	mockAuthClient(t, func(r *http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: 401, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(""))}, nil
+	})
+	handler := coreHandler(nil, "configured-key", t.TempDir())
+	for _, path := range []string{"/api/v1/agents/fixture/commands", "/metrics"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != 401 {
+			t.Fatalf("%s returned %d", path, response.Code)
+		}
+	}
+}

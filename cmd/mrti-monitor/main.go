@@ -59,7 +59,7 @@ func coreHandler(store *Store, apiKey, downloadsDir string) http.Handler {
 
 	// Agent-facing endpoints.
 	mux.HandleFunc("POST /api/v1/ingest", srv.ingest)
-	mux.HandleFunc("GET /api/v1/agents/{id}/commands", srv.getCommands)
+	mux.HandleFunc("GET /api/v1/agents/{id}/commands", srv.requireOperatorKey(srv.getCommands))
 
 	// Operator/API endpoints.
 	mux.HandleFunc("GET /api/v1/agents", srv.requirePortalAccess(srv.listAgents))
@@ -70,7 +70,7 @@ func coreHandler(store *Store, apiKey, downloadsDir string) http.Handler {
 	mux.HandleFunc("POST /api/v1/agents/{id}/commands", srv.requirePortalAccess(srv.postCommand))
 	mux.HandleFunc("GET /api/v1/alerts", srv.requirePortalAccess(srv.getAlerts))
 	mux.HandleFunc("GET /api/v1/export", srv.requirePortalAccess(srv.export))
-	mux.HandleFunc("GET /metrics", srv.metrics)
+	mux.HandleFunc("GET /metrics", srv.requirePortalAccess(srv.metrics))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("ok")) })
 	mux.HandleFunc("GET /downloads/", srv.downloadsPage)
 	mux.HandleFunc("GET /downloads/files/{name}", srv.downloadFile)
@@ -91,7 +91,7 @@ type server struct {
 func (s *server) requireOperatorKey(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		provided := r.Header.Get("X-MRTI-API-Key")
-		if s.apiKey != "" && subtle.ConstantTimeCompare([]byte(provided), []byte(s.apiKey)) != 1 {
+		if s.apiKey == "" || subtle.ConstantTimeCompare([]byte(provided), []byte(s.apiKey)) != 1 {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 			return
 		}
@@ -137,7 +137,7 @@ func (s *server) requirePortalAccess(next http.HandlerFunc) http.HandlerFunc {
 
 // ingest accepts envelopes, heartbeats and command results from agents.
 func (s *server) ingest(w http.ResponseWriter, r *http.Request) {
-	if s.apiKey != "" && r.Header.Get("X-MRTI-API-Key") != s.apiKey {
+	if s.apiKey == "" || subtle.ConstantTimeCompare([]byte(r.Header.Get("X-MRTI-API-Key")), []byte(s.apiKey)) != 1 {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}

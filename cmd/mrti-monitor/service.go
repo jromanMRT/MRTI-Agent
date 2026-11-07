@@ -37,7 +37,7 @@ type coreProgram struct {
 func main() {
 	addr := flag.String("addr", ":8477", "listen address")
 	dbPath := flag.String("db", "core.db", "path to the SQLite database")
-	apiKey := flag.String("api-key", "demo-api-key", "API key agents must present on ingest (X-MRTI-API-Key)")
+	apiKey := flag.String("api-key", "", "Required API key for ingest and command polling (X-MRTI-API-Key)")
 	downloadsDir := flag.String("downloads-dir", "dist/downloads", "directory containing public agent installer packages")
 	svcAction := flag.String("service", "", "service control action: install|uninstall|start|stop|restart")
 	foreground := flag.Bool("foreground", false, "run attached to the current console")

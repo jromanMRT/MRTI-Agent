@@ -55,9 +55,9 @@ test('las rutas de operador pasan por la validación de sesión', async () => {
     for (const path of ['/api/v1/agents', '/api/v1/agents/a/modules/cpu', '/api/v1/alerts', '/api/v1/export']) {
       assert.equal((await fetch(base + path)).status, 401, path);
     }
-    // La cola de comandos y las métricas no piden sesión, igual que en Go.
-    assert.equal((await fetch(`${base}/api/v1/agents/a/commands`)).status, 204);
-    assert.equal((await fetch(`${base}/metrics`)).status, 200);
+    // Métricas requieren sesión y comandos requieren la llave de agente.
+    assert.equal((await fetch(`${base}/api/v1/agents/a/commands`)).status, 401);
+    assert.equal((await fetch(`${base}/metrics`)).status, 401);
   } finally { close(); }
 });
 
@@ -75,4 +75,20 @@ test('métricas: líneas por módulo con formato de Go', () => {
   assert.match(text, /mount="C:\\\\"\} 50/);
   assert.doesNotMatch(text, /mrti_temperature_celsius\{/);
   assert.match(text, /mrti_docker_containers_running\{.*\} 3/);
+});
+
+test('la llave se valida antes de consumir comandos; métricas nunca son públicas', async () => {
+  let calls = 0;
+  const store = fakeStore();
+  store.takeCommands = async () => { calls++; return [{ id: 'fixture', type: 'inventory' }]; };
+  const { base, close } = await serve({ store, apiKey: 'fixture-key', portalAccess: (_q, r) => r.sendStatus(401) });
+  try {
+    for (const headers of [{}, { 'X-MRTI-API-Key': 'invalid' }, { Authorization: 'Bearer fixture' }]) {
+      assert.equal((await fetch(`${base}/api/v1/agents/fixture/commands`, { headers })).status, 401);
+    }
+    assert.equal(calls, 0);
+    assert.equal((await fetch(`${base}/api/v1/agents/fixture/commands`, { headers: { 'X-MRTI-API-Key': 'fixture-key' } })).status, 200);
+    assert.equal(calls, 1);
+    assert.equal((await fetch(`${base}/metrics`)).status, 401);
+  } finally { close(); }
 });

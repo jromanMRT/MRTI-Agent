@@ -130,9 +130,9 @@ export function createApp({ store, apiKey, portalAccess, healthCheck = async () 
     res.type('application/json').send('{"ok":true}');
   }));
 
-  // Igual que en Go, la cola de comandos no exige llave: el agente sólo
-  // recibe los suyos por su id.
-  app.get('/api/v1/agents/:id/commands', wrap(async (req, res) => {
+  // Los agentes existentes ya adjuntan su llave en Poll. No consumir la cola
+  // hasta validar la credencial; una sesión de operador no sustituye la llave.
+  app.get('/api/v1/agents/:id/commands', agentKeyRequired, wrap(async (req, res) => {
     const commands = await store.takeCommands(req.params.id);
     if (!commands.length) return res.status(204).end();
     goJson(res, 200, commands);
@@ -187,7 +187,7 @@ export function createApp({ store, apiKey, portalAccess, healthCheck = async () 
     res.type('application/json').set('Content-Disposition', 'attachment; filename=mrti-export.json')
       .send(JSON.stringify({ exported_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'), agent_count: agents.length, agents: fleet, alerts: nullIfEmpty(await store.recentAlerts(200)) }));
   }));
-  app.get('/metrics', wrap(async (_req, res) => {
+  app.get('/metrics', portalAccess, wrap(async (_req, res) => {
     const agents = await store.listAgents();
     const modules = {};
     for (const agent of agents) modules[agent.id] = await store.modulesFor(agent.id);
